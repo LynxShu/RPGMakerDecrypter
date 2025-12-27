@@ -192,7 +192,7 @@ class App(ctk.CTk, TkinterDnD.DnDWrapper):
         ctk.CTkButton(
             util_bar, text="", image=self.icons["github"], width=32, height=32,
             fg_color="transparent", hover_color=(COLORS["surface_hover"]["light"], COLORS["surface_hover"]["dark"]),
-            command=lambda: webbrowser.open("https://github.com/LynxShu/rmdecrypter")
+            command=lambda: webbrowser.open("https://github.com/LynxShu/RPGMakerDecrypter")
         ).pack(side="left", padx=4)
         
         # Theme Toggle
