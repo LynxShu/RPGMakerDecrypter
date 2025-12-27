@@ -1,0 +1,4 @@
+lzstring
+pillow
+customtkinter
+tkinterdnd2
