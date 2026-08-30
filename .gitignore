@@ -42,4 +42,4 @@ docs/
 
 # 真实游戏样本（仅本地回归测试用；因版权与体积不进仓库）
 # 如需新增样本目录，在此追加，例如 fixtures/AnotherGame/
-fixtures/real-sample/
+fixtures/

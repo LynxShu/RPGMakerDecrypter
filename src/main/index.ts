@@ -61,12 +61,25 @@ function clearDecryptCache(): void {
   decryptCacheDir = null
 }
 
-/** 清扫整个解密缓存根目录：覆盖上次运行/异常退出残留的所有 decrypt-<uuid> 目录 */
-function sweepStaleDecryptCache(): void {
+/** 异步、非阻塞地清扫解密缓存根目录下「非当前会话」的残留 decrypt-<uuid> 目录。
+ *  改为异步：避免上次运行/异常退出留下大量文件时，启动时同步 rmSync 卡住主线程，
+ *  导致窗口迟迟不显示（表现为「点了没界面、进程却在跑」）。只清非当前会话目录，避免误删进行中的缓存。 */
+async function sweepStaleDecryptCache(): Promise<void> {
+  const root = decryptCacheRoot()
   try {
-    rmSync(decryptCacheRoot(), { recursive: true, force: true })
+    const entries = await fsp.readdir(root, { withFileTypes: true }).catch(() => [] as Array<{ name: string; isDirectory(): boolean }>)
+    for (const e of entries) {
+      if (!e.isDirectory() || !e.name.startsWith('decrypt-')) continue
+      const full = join(root, e.name)
+      if (full === decryptCacheDir) continue
+      try {
+        await fsp.rm(full, { recursive: true, force: true })
+      } catch {
+        /* 单个目录清理失败不致命 */
+      }
+    }
   } catch {
-    /* 清理失败不致命 */
+    /* 根目录不存在等情况忽略 */
   }
 }
 
@@ -130,6 +143,23 @@ const OVERLAY_COLORS: Record<'light' | 'dark', { color: string; symbolColor: str
 /** 解析配置中的主题为 overlay 用色（system/未配置 → dark，与渲染层「固定深色」默认一致） */
 function resolveOverlayTheme(theme: AppConfig['theme']): 'light' | 'dark' {
   return theme === 'light' ? 'light' : 'dark'
+}
+
+/**
+ * 语义化版本比较：返回 a - b（>0 表示 a 比 b 新，<0 表示旧，0 相等）。
+ * 忽略前导 `v`，按点分段转数字逐段比较，段数不足按 0 补齐（如 1.0.1 == 1.0.1.0）。
+ * 用于更新检查：仅当线上最新版严格大于当前版本时才提示有更新，避免误报。
+ */
+function cmpVersion(a: string, b: string): number {
+  const pa = a.trim().replace(/^v/i, '').split('.').map((x) => parseInt(x, 10) || 0)
+  const pb = b.trim().replace(/^v/i, '').split('.').map((x) => parseInt(x, 10) || 0)
+  const len = Math.max(pa.length, pb.length)
+  for (let i = 0; i < len; i++) {
+    const x = pa[i] ?? 0
+    const y = pb[i] ?? 0
+    if (x !== y) return x - y
+  }
+  return 0
 }
 
 /** 让窗口的系统窗口控制按钮颜色跟随主题（仅 Windows titleBarOverlay 生效） */
@@ -290,24 +320,37 @@ function setupIpc(): void {
     }
   })
 
-  // 更新检查：GitHub releases API。网络不可用/请求失败 → 返回 error（UI 静默提示，不打扰）。
+  // 更新检查：读取 GitHub releases.atom 订阅源（而非 REST API）。
+  // 原因：REST API 对未认证请求有 60 次/小时/IP 的速率限制，若用户走代理/共享出口，
+  // 很容易被共享该 IP 的其他请求用满而返回 403（"API rate limit exceeded"），
+  // 导致「检查更新」一直失败。Atom 订阅源不受该速率限制，且每条 <entry> 以最新发布在前。
+  // 网络不可用/请求失败 → 返回 error（UI 静默提示，不打扰）。
   ipcMain.handle('app:checkUpdate', async () => {
     try {
-      const res = await fetch('https://api.github.com/repos/LynxShu/RPGMakerDecrypter/releases/latest', {
-        headers: { Accept: 'application/vnd.github+json' },
-        signal: AbortSignal.timeout(8000)
+      const res = await fetch('https://github.com/LynxShu/RPGMakerDecrypter/releases.atom', {
+        headers: { Accept: 'application/atom+xml' },
+        signal: AbortSignal.timeout(15000)
       })
       if (!res.ok) return { ok: false as const, error: `HTTP ${res.status}` }
-      const data = (await res.json()) as { tag_name?: string; html_url?: string; name?: string }
-      const latest = (data.tag_name ?? '').replace(/^v/, '')
-      const current = app.getVersion().replace(/^v/, '')
-      // 简单版本比较：当前版本存在且与 latest 相同时视为最新
-      const hasUpdate = latest.length > 0 && latest !== current
+      const xml = await res.text()
+      // 取第一个 <entry>（= 最新发布）里的版本号：<id> 形如
+      //   tag:github.com,2008:Repository/.../releases/tag/v1.0.1
+      // 退而求其次用 <title>（通常也是 tag）。
+      const latestTag =
+        /<entry>[\s\S]*?<id>tag:[^<]*?\/releases\/tag\/([^<]+)<\/id>/.exec(xml)?.[1] ||
+        /<entry>[\s\S]*?<title>([^<]+)<\/title>/.exec(xml)?.[1] ||
+        ''
+      const latest = latestTag.trim().replace(/^v/, '')
+      const current = app.getVersion().trim().replace(/^v/, '')
+      // 语义化版本比较：仅当「线上最新版 严格大于 当前版本」才提示更新；
+      // 相等/更旧一律视为已是最新（否则裸字符串 !== 会在 v1.0.1 vs 1.0.1、
+      // 或线上还是旧版 1.0.0 时误报「有新版本」）。
+      const hasUpdate = latest.length > 0 && cmpVersion(latest, current) > 0
       return {
         ok: true as const,
         hasUpdate,
-        latest: data.tag_name ?? latest,
-        url: data.html_url ?? 'https://github.com/LynxShu/RPGMakerDecrypter/releases',
+        latest: latestTag.trim(),
+        url: `https://github.com/LynxShu/RPGMakerDecrypter/releases`,
         current: app.getVersion()
       }
     } catch (e) {
@@ -676,6 +719,13 @@ function createWindow(): BrowserWindow {
 
   win.on('ready-to-show', () => win.show())
 
+  // 兜底：若 ready-to-show 迟迟不触发（渲染器加载慢/异常），超时后也强制显示，
+  // 避免出现「进程在跑但窗口一直不显示」的无窗口启动（show:false 需靠 ready-to-show 才显示）。
+  const forceShowTimer = setTimeout(() => {
+    if (!win.isDestroyed() && !win.isVisible()) win.show()
+  }, 2500)
+  win.on('closed', () => clearTimeout(forceShowTimer))
+
   win.webContents.setWindowOpenHandler(({ url }) => {
     shell.openExternal(url)
     return { action: 'deny' }
@@ -724,9 +774,9 @@ async function bootstrap(): Promise<void> {
     broadcastI18nChanged()
   })
 
-  // 启动时清扫上次残留的解密缓存根目录（decryptCacheDir 在新进程里为空，
-  // 必须直接删父目录才能清掉上一会话的 decrypt-<uuid> 残留）
-  sweepStaleDecryptCache()
+  // 启动时清掉上次残留的解密缓存目录（异步非阻塞，不挡住窗口显示；decryptCacheDir 在新进程里为空，
+  // 直接删父目录下所有 decrypt-<uuid> 子目录即可清掉上一会话残留）
+  void sweepStaleDecryptCache()
 
   setupIpc()
   createWindow()
@@ -736,11 +786,44 @@ async function bootstrap(): Promise<void> {
   })
 }
 
-app.whenReady().then(bootstrap)
+// ---- 单实例锁：修复「双击/多次启动堆积无窗口后台进程」----
+// 之前没有单实例锁：用户点叉关闭窗口后，主进程有时不会随窗口一起退出（window-all-closed
+// 在打包版偶发未走到 app.quit()），残留一个无窗口的主进程；此时再次双击 exe 会新起一个完整
+// 实例，而新实例的窗口若 ready-to-show 未触发（show:false 就永远不显示），就表现为
+// 「没界面、进程却越堆越多」，最终完全打不开。
+// 加锁后：后启动的实例立即退出并聚焦/重建第一个实例的窗口，彻底消除进程堆积。
+const gotSingleInstanceLock = app.requestSingleInstanceLock()
 
-// 退出时清理当前会话的解密缓存，避免在临时目录堆积
+if (!gotSingleInstanceLock) {
+  // 已有实例在运行：本实例不再启动窗口，直接退出（由第二个实例把已有窗口带到前台）
+  // 用 app.exit() 而非 app.quit()：第二实例没有窗口，无需走完整关闭流程，立即退出避免短暂残留。
+  app.exit(0)
+} else {
+  app.on('second-instance', () => {
+    let win = BrowserWindow.getAllWindows()[0]
+    if (!win || win.isDestroyed()) {
+      // 主进程仍在但窗口已不存在（如之前点叉只关了窗口）→ 重建一个
+      try {
+        win = createWindow()
+      } catch {
+        return
+      }
+    }
+    if (win && !win.isDestroyed()) {
+      if (win.isMinimized()) win.restore()
+      win.show()
+      win.focus()
+    }
+  })
+
+  app.whenReady().then(bootstrap)
+}
+
+// 退出时清理当前会话的解密缓存 + 关闭语言包监视，避免残留句柄
 app.on('will-quit', () => {
   clearDecryptCache()
+  localeWatcher?.close()
+  localeWatcher = null
 })
 
 app.on('window-all-closed', () => {

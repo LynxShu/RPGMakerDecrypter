@@ -1,6 +1,6 @@
 {
   "name": "rpgmaker-decrypter",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "RPG Maker MV/MZ 资源解密、存档编辑与汉化辅助工具（Electron + TypeScript 重写）",
   "author": "LynxShu",
   "license": "MIT",
