@@ -1,0 +1,45 @@
+# 依赖与构建产物
+node_modules/
+dist/
+out/
+out-lib/
+out-test/
+out-cli-test/
+release/
+coverage/
+
+# 日志与临时
+*.log
+.DS_Store
+Thumbs.db
+*.orig
+*.rej
+
+# Electron
+electron-builder-cache/
+.electron-cache/
+
+# npm 缓存（工作区内，避免写全局 AppData 被拒）
+.npm-cache/
+.npm/
+
+# CLI 单文件产物（如未来用 bun/pkg/nexe）
+cli-bin/
+
+# 本地配置（含敏感的项目/密钥历史）
+*.local.json
+.env
+.env.*
+
+# 本地交接/鸣谢文档（不进最终仓库 / 不参与 git 同步）
+HANDOFF.md
+*.handoff.md
+THANKS.md
+*.thanks.md
+
+# 本地临时文件区（用户自建 docs/，不进仓库）
+docs/
+
+# 真实游戏样本（仅本地回归测试用；因版权与体积不进仓库）
+# 如需新增样本目录，在此追加，例如 fixtures/AnotherGame/
+fixtures/real-sample/

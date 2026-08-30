@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="zh-Hans">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; media-src 'self' data:;"
+    />
+    <title>RPG Maker Decrypter</title>
+    <link rel="stylesheet" href="./src/style.css" />
+  </head>
+  <body>
+    <div id="app">
+      <!-- 顶栏：logo + 标题 + 图标按钮组 -->
+      <header class="topbar">
+        <div class="brand">
+          <!-- logo 占位：用户提供 logo.png 后放入 src/renderer/assets/，图片自动替换占位符 -->
+          <div class="logo-slot" id="logoSlot">
+            <svg class="logo-fallback" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>
+            </svg>
+          </div>
+          <h1 data-i18n="app.title">RPG Maker Decrypter</h1>
+          <span class="version-tag" id="version"></span>
+        </div>
+        <div class="topbar-right">
+          <!-- 语言（地球）：菜单对齐按钮左缘 -->
+          <div class="menu-wrap">
+            <button class="icon-btn" id="localeBtn" data-i18n-title="toolbar.locale" aria-haspopup="menu" aria-expanded="false"></button>
+            <div class="menu" id="localeMenu" role="menu"></div>
+          </div>
+          <!-- 主题（日/月）：点击直接切换亮/暗 -->
+          <button class="icon-btn" id="themeBtn" data-i18n-title="toolbar.theme"></button>
+          <!-- GitHub 仓库 -->
+          <button class="icon-btn" id="githubBtn" data-i18n-title="toolbar.github"></button>
+          <!-- 更新检查：结果以底部悬浮提示展示 -->
+          <button class="icon-btn" id="updateBtn" data-i18n-title="toolbar.update"></button>
+        </div>
+      </header>
+
+      <nav class="tabs">
+        <button id="tabDecrypt" class="tab active" data-i18n="nav.decrypt"></button>
+        <button id="tabEncrypt" class="tab" data-i18n="nav.encrypt"></button>
+        <button id="tabRestore" class="tab" data-i18n="nav.restore"></button>
+        <button id="tabSave" class="tab" data-i18n="nav.save"></button>
+      </nav>
+
+      <!-- ============ 解密：选目录 → 开始解密 → 统计 → 导出 ============ -->
+      <main class="pane" id="decryptPane">
+        <section class="card decrypt-card tool-card">
+          <div class="source-row">
+            <button id="openBtn" class="btn picker" data-i18n="crypto.selectFolder"></button>
+            <div class="keybox" id="keyStatus" data-ok="0">
+              <input id="keyInput" class="key-input" data-i18n-placeholder="crypto.keyPlaceholder" placeholder="encryption key" spellcheck="false" />
+              <span class="key-state" id="keyState" data-tip="" hidden></span>
+            </div>
+          </div>
+
+          <!-- 状态行：找到数量 + 进度 合并为一行 -->
+          <div id="scanStatus" class="status-line"></div>
+          <div class="progress" id="scanProgress" hidden><div class="bar"></div></div>
+
+          <div class="stats compact">
+            <div class="stat"><span class="stat-num" id="statTotal">—</span><span class="stat-label" data-i18n="crypto.statEncrypted"></span></div>
+            <div class="stat"><span class="stat-num" id="statOk">—</span><span class="stat-label" data-i18n="crypto.statOk"></span></div>
+            <div class="stat"><span class="stat-num" id="statFail">—</span><span class="stat-label" data-i18n="crypto.statFail"></span></div>
+            <div class="stat"><span class="stat-num" id="statMagic">—</span><span class="stat-label" data-i18n="crypto.statMagic"></span></div>
+          </div>
+
+          <div class="export-row">
+            <button id="resetBtn" class="btn" data-i18n="crypto.reset"></button>
+            <button id="exportBtn" class="btn primary" data-i18n="crypto.export" disabled></button>
+            <button id="exportZipBtn" class="btn" data-i18n="crypto.exportZip" disabled></button>
+          </div>
+          <div class="progress" id="exportProgress" hidden><div class="bar"></div></div>
+
+          <div class="files" id="fileCard">
+            <div id="fileList" class="fileList"></div>
+          </div>
+
+          <!-- 底部中央主操作按钮（合并 开始解密/取消/导出取消） -->
+          <div class="fab-row">
+            <button id="scanBtn" class="fab main" data-i18n="crypto.startDecrypt" disabled></button>
+          </div>
+        </section>
+      </main>
+
+      <!-- ============ 加密：文件/目录 + MV/MZ 版本 + 进度 ============ -->
+      <main class="pane" id="encryptPane" hidden>
+        <section class="card compact-card tool-card">
+          <div class="source-row center">
+            <button id="encPickFileBtn" class="btn picker source" data-i18n="encrypt.pickFile"></button>
+            <button id="encPickDirBtn" class="btn picker source" data-i18n="encrypt.pickDir"></button>
+            <button id="encOutBtn" class="btn picker output" data-i18n="encrypt.outputDir"></button>
+          </div>
+          <div class="opts-row">
+            <div class="seg" id="encVerSeg">
+              <button type="button" class="seg-btn active" data-ver="mv">MV</button>
+              <button type="button" class="seg-btn" data-ver="mz">MZ</button>
+            </div>
+            <input id="encKey" class="key-input" data-i18n-placeholder="encrypt.key" placeholder="encryption key" spellcheck="false" />
+          </div>
+          <div id="encStatus" class="status-line"></div>
+          <div class="progress" id="encProgress" hidden><div class="bar"></div></div>
+          <div class="stats compact" id="encStats">
+            <div class="stat"><span class="stat-num" id="encStatOk">0</span><span class="stat-label" data-i18n="crypto.statOk"></span></div>
+            <div class="stat"><span class="stat-num" id="encStatFail">0</span><span class="stat-label" data-i18n="crypto.statFail"></span></div>
+            <div class="stat"><span class="stat-num" id="encStatSkip">0</span><span class="stat-label" data-i18n="crypto.statSkip"></span></div>
+          </div>
+          <div class="files" id="encFileCard">
+            <div id="encFileList" class="fileList"></div>
+          </div>
+          <div class="step-row actions" id="encDoneActions">
+            <button id="encOpenOutBtn" class="btn" data-i18n="encrypt.openOutput" disabled></button>
+          </div>
+          <div class="fab-row">
+            <button id="encGoBtn" class="fab main" data-i18n="encrypt.start" disabled></button>
+          </div>
+        </section>
+      </main>
+
+      <!-- ============ 图片还原（无密钥救图）：文件/目录 + 进度 ============ -->
+      <main class="pane" id="restorePane" hidden>
+        <section class="card compact-card tool-card">
+          <div class="source-row center">
+            <button id="resPickFileBtn" class="btn picker source" data-i18n="restore.pickFile"></button>
+            <button id="resPickDirBtn" class="btn picker source" data-i18n="restore.pickDir"></button>
+            <button id="resOutBtn" class="btn picker output" data-i18n="restore.outputDir"></button>
+          </div>
+          <div id="resStatus" class="status-line"></div>
+          <div class="progress" id="resProgress" hidden><div class="bar"></div></div>
+          <div class="stats compact" id="resStats">
+            <div class="stat"><span class="stat-num" id="resStatOk">0</span><span class="stat-label" data-i18n="crypto.statOk"></span></div>
+            <div class="stat"><span class="stat-num" id="resStatFail">0</span><span class="stat-label" data-i18n="crypto.statFail"></span></div>
+            <div class="stat"><span class="stat-num" id="resStatSkip">0</span><span class="stat-label" data-i18n="crypto.statSkip"></span></div>
+          </div>
+          <div class="files" id="resFileCard">
+            <div id="resFileList" class="fileList"></div>
+          </div>
+          <div class="step-row actions" id="resDoneActions">
+            <button id="resOpenOutBtn" class="btn" data-i18n="restore.openOutput" disabled></button>
+          </div>
+          <div class="fab-row">
+            <button id="resGoBtn" class="fab main" data-i18n="restore.start" disabled></button>
+          </div>
+        </section>
+      </main>
+
+      <!-- ============ 存档编辑 ============ -->
+      <main class="layout" id="savePane" hidden>
+        <section class="sidebar">
+          <div class="toolbar">
+            <button id="saveOpenDirBtn" class="btn picker" data-i18n="save.selectDir"></button>
+            <button id="saveOpenFileBtn" class="btn picker" data-i18n="save.selectFile"></button>
+          </div>
+          <div id="saveStatus" class="scanStatus"></div>
+          <div id="saveFileList" class="fileList">
+            <div class="empty muted" data-i18n="save.noFiles"></div>
+          </div>
+        </section>
+
+        <section class="content save-content">
+          <div class="save-head">
+            <div class="sub-tabs">
+              <button id="stabQuick" class="tab small active" data-i18n="save.quick"></button>
+              <button id="stabJson" class="tab small" data-i18n="save.json"></button>
+              <span id="saveDirty" class="dirty" hidden></span>
+            </div>
+            <div class="save-head-actions">
+              <span id="saveWriteStatus" class="scanStatus save-write-status"></span>
+              <button id="saveWriteBtn" class="btn primary save-write" data-i18n="save.write" disabled></button>
+            </div>
+          </div>
+          <div class="json-search" id="jsonSearch" hidden>
+            <input id="jsonSearchInput" type="search" data-i18n-placeholder="save.searchPlaceholder" placeholder="Search…" spellcheck="false" />
+            <span id="jsonSearchCount" class="search-count"></span>
+            <button id="jsonSearchPrev" class="btn-mini" data-i18n-title="save.searchPrev" title="上一处">↑</button>
+            <button id="jsonSearchNext" class="btn-mini" data-i18n-title="save.searchNext" title="下一处">↓</button>
+            <button id="jsonSearchClear" class="btn-mini" data-i18n-title="save.searchClear" title="清除">✕</button>
+          </div>
+          <div id="saveQuick" class="save-body"></div>
+          <div id="saveJson" class="save-body" hidden></div>
+        </section>
+      </main>
+    </div>
+    <!-- 底部中央悬浮提示（更新检查等） -->
+    <div class="toast" id="toast" role="status" hidden></div>
+    <script type="module" src="./src/main.ts"></script>
+  </body>
+</html>

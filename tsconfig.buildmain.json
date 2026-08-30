@@ -1,0 +1,24 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "module": "CommonJS",
+    "moduleResolution": "Node",
+    "target": "ES2020",
+    "outDir": "out-test",
+    "rootDir": "src",
+    "declaration": false,
+    "sourceMap": false,
+    "isolatedModules": false,
+    "allowImportingTsExtensions": false,
+    "types": ["node"]
+  },
+  "include": [
+    "src/main/i18nWatcher.ts",
+    "src/main/i18nLoader.ts",
+    "src/main/configStore.ts",
+    "src/main/decryptCore.ts",
+    "src/main/decryptPool.ts",
+    "src/main/worker.ts"
+  ]
+}

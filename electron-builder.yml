@@ -1,0 +1,35 @@
+appId: org.lyxshu.rpgmakerdecrypter
+productName: RPGMakerDecrypter
+copyright: Copyright © 2024 LynxShu
+
+directories:
+  output: release
+  buildResources: build
+
+files:
+  - out/**
+  - locales/**
+  - package.json
+
+asar: true
+
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+  artifactName: ${productName}-${version}-${arch}.${ext}
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: always
+
+mac:
+  category: public.app-category.utilities
+  target:
+    - target: dmg
+      arch: [x64, arm64]
+
+linux:
+  category: Utility
+  target:
+    - AppImage
