@@ -30,7 +30,7 @@ const nodeZlib: ZlibLike = {
 }
 
 // 需与 package.json 的 version 保持一致（CLI 打包后无法方便 import package.json）
-const VERSION = '0.0.1'
+const VERSION = '1.0.1'
 
 interface RunOptions {
   key?: string
