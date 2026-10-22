@@ -21,12 +21,9 @@ import { watchLocalesDir } from './i18nWatcher'
 import { findEncryptionKey, listFilesByExt, streamEncryptedFiles } from './project'
 import { runDecryptJobs } from './decryptPool'
 import { targetRelPath, type DecryptJob } from './decryptCore'
-import { findSaveFiles, loadSave, writeSave, type SaveFileInfo } from './saveCore'
 import { createHistoryStore } from './historyStore'
 import { createConfigStore, type AppConfig } from './configStore'
 import { ensureWritableDir, migrateLegacyData, resolveDataDir } from './dataDir'
-import { loadMergedSchema } from './schemaLoader'
-import type { SaveKind } from '@lib/save'
 
 // ---- 数据目录（便携模式）----
 // 发布物是解压即用的 zip：打包版把 userData 放到 exe 同级 rpgmaker-decrypter\，
@@ -353,22 +350,13 @@ function setupIpc(): void {
   ipcMain.handle('i18n:set', (_e, locale: string) => {
     i18n.setLocale(locale)
     config.set({ locale })
-    // 广播语言变化：渲染层据此刷新静态文案（data-i18n）与存档编辑器的缓存标签
+    // 广播语言变化：渲染层据此刷新静态文案（data-i18n）
     broadcastI18nChanged()
     return i18n.getLocale()
   })
   ipcMain.handle('i18n:t', (_e, key: string, params?: Record<string, string | number>) =>
     i18n.t(key, params)
   )
-  // 批量翻译：一次取多个 key（渲染层渲染 schema 字段/组标题时避免逐字段 IPC 往返）
-  ipcMain.handle('i18n:tMany', (_e, keys: string[]) => {
-    const out: Record<string, string> = {}
-    if (!Array.isArray(keys)) return out
-    for (const k of keys) {
-      if (typeof k === 'string') out[k] = i18n.t(k)
-    }
-    return out
-  })
   ipcMain.handle('app:version', () => app.getVersion())
 
   // ---- 顶栏工具：GitHub 仓库 / 更新检查 ----
@@ -704,10 +692,10 @@ function setupIpc(): void {
     clearDecryptCache()
   })
 
-  // ---- 最近项目/密钥历史 + schema 字段 ----
+  // ---- 最近项目/密钥历史 ----
   ipcMain.handle('history:list', () => history.list())
-  ipcMain.handle('history:add', (_e, kind: 'project' | 'save', path: string, label?: string, key?: string, keySource?: string) => {
-    if (kind !== 'project' && kind !== 'save') return history.list()
+  ipcMain.handle('history:add', (_e, kind: 'project', path: string, label?: string, key?: string, keySource?: string) => {
+    if (kind !== 'project') return history.list()
     history.add({ kind, path, label: label || basename(path), key, keySource })
     return history.list()
   })
@@ -716,47 +704,6 @@ function setupIpc(): void {
     return history.list()
   })
   ipcMain.handle('history:clear', () => history.clear())
-
-  // schema 字段（蓝图 §11.4-1）：渲染层用它渲染插件自定义字段
-  ipcMain.handle('schema:list', () => loadMergedSchema(join(app.getAppPath(), 'schema')))
-
-  // ---- M2: 存档编辑器 ----
-  // 选存档目录（游戏根目录或 save/ 目录均可）：返回目录与其中的存档文件列表
-  ipcMain.handle('save:openDir', async () => {
-    const res = await dialog.showOpenDialog({ properties: ['openDirectory'] })
-    if (res.canceled || !res.filePaths[0]) return null
-    const dir = res.filePaths[0]
-    return { dir, files: findSaveFiles(dir) as SaveFileInfo[] }
-  })
-
-  // 直接扫描给定目录中的存档文件（拖放目录用）
-  ipcMain.handle('save:scanDir', (_e, dir: string) => findSaveFiles(dir) as SaveFileInfo[])
-
-  // 选单个存档文件
-  ipcMain.handle('save:openFile', async () => {
-    const res = await dialog.showOpenDialog({
-      properties: ['openFile'],
-      filters: [
-        { name: 'RPG Maker Saves', extensions: ['rpgsave', 'rmmzsave'] },
-        { name: 'All Files', extensions: ['*'] }
-      ]
-    })
-    if (res.canceled || !res.filePaths[0]) return null
-    return { file: res.filePaths[0] }
-  })
-
-  // 解码加载存档（读文件 → codec 解码 → contents）
-  ipcMain.handle('save:load', (_e, absPath: string) => {
-    const loaded = loadSave(absPath)
-    // 记录最近存档
-    history.add({ kind: 'save', path: absPath, label: basename(absPath) })
-    return loaded
-  })
-
-  // 编码写回存档（先备份原文件）
-  ipcMain.handle('save:write', (_e, absPath: string, contents: unknown, kind: SaveKind) =>
-    writeSave(absPath, contents, kind)
-  )
 }
 
 function createWindow(): BrowserWindow {

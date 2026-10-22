@@ -11,14 +11,14 @@
 
 <h3><p>简体中文 &nbsp; / &nbsp; <a href="README_en.md">English</a> &nbsp; / &nbsp; <a href="README_jp.md">日本語</a></p></h3>
 
-**RPG Maker MV / MZ** 游戏资源的解密、加密、存档编辑工具
+**RPG Maker MV / MZ** 游戏资源的解密、加密工具
 
 </div>
 
 
 ## 📖 1. 项目简介
 
-- 本工具用于从 RPG Maker MV / MZ 游戏中解密或重新加密资源，并支持编辑游戏存档，适用于找回自己丢失的项目文件、获得授权的改模与学习研究。
+- 本工具用于从 RPG Maker MV / MZ 游戏中解密或重新加密资源，适用于找回自己丢失的项目文件、获得授权的改模与学习研究。
 - 更多功能及易用性改进将持续进行...
 
 > [!TIP]
@@ -31,7 +31,6 @@
 - **密钥反推**：从 `System.json`、`rpg_core.js` 或加密图片头反推密钥。
 - **批量与性能**：多线程解密，实时进度、可取消、单文件超时自动跳过；超大目录流式扫描、渐进渲染。
 - **导出**：解密结果可导出为文件目录或打包为 `ZIP`。
-- **存档编辑器**：MV / MZ 存档解码，`快捷修改` 与 `JSON 树` 双视图编辑，写回前自动备份 `.bak`。
 - **多语言**：内置中文 / English / 日本語，支持**自定义语言包**。
 - **主题**：明暗主题。
 - **命令行**：完整 CLI，便于批量自动化。
@@ -54,11 +53,7 @@
 
 切换到对应标签，选择文件/目录与输出目录，进行单/批量处理。
 
-### 3️⃣ 存档编辑器
-
-选择存档目录或单个存档文件，用快捷表单或 JSON 树编辑，保存时自动备份。
-
-### 4️⃣ 命令行（CLI）
+### 3️⃣ 命令行（CLI）
 
 ```bash
 # 资源
@@ -67,10 +62,6 @@ rpgmaker-decrypter encrypt <file> -k <key> [-o out]
 rpgmaker-decrypter restore <file> [-o out]                       # 无密钥图片恢复
 rpgmaker-decrypter detect-key <dir>                               # 自动找 key
 rpgmaker-decrypter decode-dir <dir> [-k key] [-o out] [--dry-run] [--jobs 8]
-
-# 存档
-rpgmaker-decrypter save-decode <file> [-o out.json]
-rpgmaker-decrypter save-encode <json> <out.rpgsave|out.rmmzsave> [--kind mv|mz]
 ```
 
 通用选项：`--json`（机器可读输出）、`--verbose`（更多过程信息）、`--lang <code>`（界面语言，找不到回退英文）。
@@ -139,15 +130,11 @@ npm run package      # 生成安装程序（NSIS）
 
 - [Petschko/RPG-Maker-MV-Decrypter](https://github.com/Petschko/RPG-Maker-MV-Decrypter)
 - [pieroxy/lz-string](https://github.com/pieroxy/lz-string)
-- [takuyaihara/rpgsave-editor](https://github.com/takuyaihara/rpgsave-editor)
-- [Gteditor99/rpgsave-decode](https://github.com/Gteditor99/rpgsave-decode)
 - [RPG-Maker-Translation-Tools/rpgmdec](https://github.com/RPG-Maker-Translation-Tools/rpgmdec)
 - [RPG-Maker-Translation-Tools/rpgm-archive-decrypter](https://github.com/RPG-Maker-Translation-Tools/rpgm-archive-decrypter)
 - [RPG-Maker-Translation-Tools/rpgm-asset-decrypter-rs](https://github.com/RPG-Maker-Translation-Tools/rpgm-asset-decrypter-rs)
 - [Petschko/Java-RPG-Maker-MV-Decrypter](https://github.com/Petschko/Java-RPG-Maker-MV-Decrypter)
 - [omega-slender/NimRpgMakerDecrypt](https://github.com/omega-slender/NimRpgMakerDecrypt)
-- [paradoxie/saveeditor](https://github.com/paradoxie/saveeditor)
-- [LackoPotato/RPGMakerMVSaveEditor](https://github.com/LackoPotato/RPGMakerMVSaveEditor)
 
 ## ⚖️ 免责声明
 

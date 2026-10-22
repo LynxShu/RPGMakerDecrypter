@@ -43,7 +43,6 @@
         <button id="tabDecrypt" class="tab active" data-i18n="nav.decrypt"></button>
         <button id="tabEncrypt" class="tab" data-i18n="nav.encrypt"></button>
         <button id="tabRestore" class="tab" data-i18n="nav.restore"></button>
-        <button id="tabSave" class="tab" data-i18n="nav.save"></button>
       </nav>
 
       <!-- ============ 解密：选目录 → 开始解密 → 统计 → 导出 ============ -->
@@ -144,43 +143,6 @@
           <div class="fab-row">
             <button id="resGoBtn" class="fab main" data-i18n="restore.start" disabled></button>
           </div>
-        </section>
-      </main>
-
-      <!-- ============ 存档编辑 ============ -->
-      <main class="layout" id="savePane" hidden>
-        <section class="sidebar">
-          <div class="toolbar">
-            <button id="saveOpenDirBtn" class="btn picker" data-i18n="save.selectDir"></button>
-            <button id="saveOpenFileBtn" class="btn picker" data-i18n="save.selectFile"></button>
-          </div>
-          <div id="saveStatus" class="scanStatus"></div>
-          <div id="saveFileList" class="fileList">
-            <div class="empty muted" data-i18n="save.noFiles"></div>
-          </div>
-        </section>
-
-        <section class="content save-content">
-          <div class="save-head">
-            <div class="sub-tabs">
-              <button id="stabQuick" class="tab small active" data-i18n="save.quick"></button>
-              <button id="stabJson" class="tab small" data-i18n="save.json"></button>
-              <span id="saveDirty" class="dirty" hidden></span>
-            </div>
-            <div class="save-head-actions">
-              <span id="saveWriteStatus" class="scanStatus save-write-status"></span>
-              <button id="saveWriteBtn" class="btn primary save-write" data-i18n="save.write" disabled></button>
-            </div>
-          </div>
-          <div class="json-search" id="jsonSearch" hidden>
-            <input id="jsonSearchInput" type="search" data-i18n-placeholder="save.searchPlaceholder" placeholder="Search…" spellcheck="false" />
-            <span id="jsonSearchCount" class="search-count"></span>
-            <button id="jsonSearchPrev" class="btn-mini" data-i18n-title="save.searchPrev" title="上一处">↑</button>
-            <button id="jsonSearchNext" class="btn-mini" data-i18n-title="save.searchNext" title="下一处">↓</button>
-            <button id="jsonSearchClear" class="btn-mini" data-i18n-title="save.searchClear" title="清除">✕</button>
-          </div>
-          <div id="saveQuick" class="save-body"></div>
-          <div id="saveJson" class="save-body" hidden></div>
         </section>
       </main>
     </div>

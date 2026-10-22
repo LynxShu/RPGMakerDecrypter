@@ -17,7 +17,7 @@ import {
   PNG_HEADER_BYTES,
   hexToBytes
 } from '@lib/crypto'
-import { compressToBase64 } from '@lib/save'
+import { compressToBase64 } from '@lib/crypto'
 
 // 16 字符 hex 密钥（8 组）
 const KEY = '0123456789abcdef'

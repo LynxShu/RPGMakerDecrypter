@@ -45,7 +45,7 @@ function ensureShim() {
     path.join(libShim, 'package.json'),
     JSON.stringify({ name: '@lib', version: '0.0.0', private: true, main: 'index.js' }, null, 2)
   )
-  for (const sub of ['crypto', 'i18n', 'save', 'theme']) {
+  for (const sub of ['crypto', 'i18n', 'theme']) {
     const dir = path.join(libShim, sub)
     fs.mkdirSync(dir, { recursive: true })
     fs.writeFileSync(

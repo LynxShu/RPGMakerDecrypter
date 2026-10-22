@@ -1,8 +1,8 @@
 import { ENCRYPTED_EXTENSIONS, EXTENSION_MAP, MAGIC_NUMBERS } from './constants'
 import { Decrypter } from './Decrypter'
 import { matchesMagic, type MagicKind } from './magic'
-// LZString 为通用压缩工具（纯 TS，零 Node 依赖），供存档 codec 与 key 检测共用
-import { decompressFromBase64 } from '../save/lzstring'
+// LZString 为通用压缩工具（纯 TS，零 Node 依赖），用于 key 检测时的 base64 压缩内容兜底
+import { decompressFromBase64 } from './lzstring'
 
 /**
  * 纯算法层的密钥反推 / 类型识别。不做文件 I/O（文件扫描在 M1 主进程做）。

@@ -1,5 +1,4 @@
 import { applyToDom, createThemeStore, type ThemeMode } from '@lib/theme'
-import { initSaveEditor, type SaveEditorHandle } from './save/editor'
 import { createVirtualList } from './virtualList'
 import { icons, icon } from './icons'
 
@@ -7,7 +6,7 @@ const $ = <T extends HTMLElement>(sel: string): T => document.querySelector<T>(s
 const dsh = window.dsh
 
 // 当前激活的 tab
-let activeTab: 'decrypt' | 'encrypt' | 'restore' | 'save' = 'decrypt'
+let activeTab: 'decrypt' | 'encrypt' | 'restore' = 'decrypt'
 
 // ---- 主题（持久化；light ↔ dark 互切，去掉 system 自适应） ----
 async function restoreTheme(): Promise<string> {
@@ -944,20 +943,18 @@ function bind(): void {
 }
 
 // ---- tab 导航 ----
-function initTabs(saveEditor: SaveEditorHandle): void {
+function initTabs(): void {
   const panes: Record<string, string> = {
     decrypt: 'decryptPane',
     encrypt: 'encryptPane',
-    restore: 'restorePane',
-    save: 'savePane'
+    restore: 'restorePane'
   }
   const tabs: Array<[string, string]> = [
     ['decrypt', 'tabDecrypt'],
     ['encrypt', 'tabEncrypt'],
-    ['restore', 'tabRestore'],
-    ['save', 'tabSave']
+    ['restore', 'tabRestore']
   ]
-  const show = (which: 'decrypt' | 'encrypt' | 'restore' | 'save'): void => {
+  const show = (which: 'decrypt' | 'encrypt' | 'restore'): void => {
     activeTab = which
     for (const [key, tabId] of tabs) {
       ;($(`#${panes[key]}`) as HTMLElement).hidden = key !== which
@@ -980,10 +977,7 @@ function initTabs(saveEditor: SaveEditorHandle): void {
     if (!file) return
     const path = dsh.getPathForFile(file)
     if (!path) return
-    if (activeTab === 'save') {
-      if (/\.(rpgsave|rmmzsave)$/i.test(file.name)) void saveEditor.loadFile(path)
-      else void saveEditor.openDir(path)
-    } else if (activeTab === 'encrypt') {
+    if (activeTab === 'encrypt') {
       void toolFilesFromDrop(encUi, path)
     } else if (activeTab === 'restore') {
       void toolFilesFromDrop(resUi, path)
@@ -1003,8 +997,7 @@ async function main(): Promise<void> {
   await initTheme()
   await refreshI18n()
   bindI18nHotReload()
-  const saveEditor = initSaveEditor()
-  initTabs(saveEditor)
+  initTabs()
   bind()
 }
 

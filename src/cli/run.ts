@@ -7,10 +7,8 @@
 import { Command } from 'commander'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, extname, join, resolve } from 'node:path'
-import { deflateSync, inflateSync } from 'node:zlib'
 import { Decrypter, toNormalExtension } from '@lib/crypto'
 import { createI18n } from '@lib/i18n'
-import { decodeSave, encodeSave, kindFromExtension, type SaveKind, type ZlibLike } from '@lib/save'
 import { findEncryptionKey, scanEncryptedFiles } from '../main/project'
 import { runDecryptJobs } from '../main/decryptPool'
 import { targetRelPath, type DecryptJob } from '../main/decryptCore'
@@ -22,12 +20,6 @@ export interface CliIO {
 }
 
 const defaultIo: CliIO = { out: (s) => console.log(s), err: (s) => console.error(s) }
-
-// Node zlib 注入（@lib 零 Node 依赖，CLI 侧提供）
-const nodeZlib: ZlibLike = {
-  deflateToBinaryString: (json) => deflateSync(Buffer.from(json, 'utf8'), { level: 1 }).toString('latin1'),
-  inflateFromBinaryString: (bin) => inflateSync(Buffer.from(bin, 'latin1')).toString('utf8')
-}
 
 // 需与 package.json 的 version 保持一致（CLI 打包后无法方便 import package.json）
 const VERSION = '1.0.2'
@@ -286,54 +278,6 @@ function buildProgram(io: CliIO, fail: () => void): Command {
         }
       }
     )
-
-  program
-    .command('save-decode')
-    .description('解码 MV/MZ 存档（LZString base64 / zlib deflate + JsonEx）为 JSON')
-    .argument('<file>', '存档文件（save/fileN.rpgsave 或 fileN.rmmzsave）')
-    .option('-o, --output <file>', '输出 JSON 文件（默认打印到 stdout）')
-    .action((file: string, opts: { output?: string }) => {
-      try {
-        const text = readFileSync(file, 'utf8')
-        const hint = kindFromExtension(extname(file))
-        const { kind, contents } = decodeSave(text, nodeZlib, hint)
-        const json = JSON.stringify(contents, null, 2)
-        if (opts.output) {
-          writeFileSync(opts.output, json)
-          io.out(`${kind.toUpperCase()} 存档已解码 -> ${opts.output}`)
-        } else {
-          io.out(json)
-        }
-      } catch (e) {
-        io.err(`解码失败: ${(e as Error).message}`)
-        fail()
-      }
-    })
-
-  program
-    .command('save-encode')
-    .description('把 JSON 编码为 MV/MZ 存档（JsonEx + LZString base64 / zlib deflate）')
-    .argument('<json>', 'JSON 文件（存档 contents）')
-    .argument('<output>', '输出存档路径（.rpgsave → MV，.rmmzsave → MZ）')
-    .option('--kind <mv|mz>', '强制存档种类（默认按输出扩展名推断）')
-    .action((jsonFile: string, output: string, opts: { kind?: string }) => {
-      try {
-        const contents = JSON.parse(readFileSync(jsonFile, 'utf8'))
-        const kind: SaveKind | null =
-          opts.kind === 'mv' || opts.kind === 'mz' ? opts.kind : kindFromExtension(extname(output))
-        if (!kind) {
-          io.err('无法推断存档种类，请用 --kind mv|mz 指定')
-          fail()
-          return
-        }
-        const text = encodeSave(contents, kind, nodeZlib)
-        writeFileSync(output, text)
-        io.out(`${kind.toUpperCase()} 存档已编码 -> ${output}`)
-      } catch (e) {
-        io.err(`编码失败: ${(e as Error).message}`)
-        fail()
-      }
-    })
 
   return program
 }

@@ -1,7 +1,7 @@
 /**
  * 最近项目 / 密钥历史（纯 TS，零 Node/Electron 依赖）。
  *
- * 蓝图 §11.4-5：本地保存最近打开的项目目录与存档文件，便于快速重开。
+ * 蓝图 §11.4-5：本地保存最近打开的项目目录，便于快速重开。
  * 注意：密钥为敏感数据——本模块只负责「数据组织」；落盘与是否加密由主进程
  * （historyStore.ts）决定，UI 需给出强提醒。
  *
@@ -9,16 +9,16 @@
  * - id 由 kind + path 决定（确定性），同一路径重复打开只更新 openedAt，不产生重复条目；
  * - 按 openedAt 倒序；超出 cap 丢弃最旧条目。
  */
-export type HistoryKind = 'project' | 'save'
+export type HistoryKind = 'project'
 
 export interface HistoryEntry {
   id: string
   kind: HistoryKind
-  /** 项目目录或存档文件的绝对路径 */
+  /** 项目目录的绝对路径 */
   path: string
-  /** 展示名（通常为目录名/文件名） */
+  /** 展示名（通常为目录名） */
   label: string
-  /** 项目密钥（project 且有 key 时才有；save 无） */
+  /** 项目密钥（有 key 时才有） */
   key?: string
   /** 密钥来源说明（如 data/System.json） */
   keySource?: string
@@ -38,7 +38,7 @@ export function isValidHistoryEntry(e: unknown): e is HistoryEntry {
   if (!e || typeof e !== 'object' || Array.isArray(e)) return false
   const rec = e as Record<string, unknown>
   return (
-    (rec.kind === 'project' || rec.kind === 'save') &&
+    rec.kind === 'project' &&
     typeof rec.path === 'string' &&
     rec.path.length > 0 &&
     typeof rec.label === 'string' &&

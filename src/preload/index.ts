@@ -1,6 +1,5 @@
 import { contextBridge, ipcRenderer, webUtils } from 'electron'
 import type { HistoryEntry, HistoryKind } from '../lib/history'
-import type { SaveSchema } from '../lib/save/schema'
 
 export interface AvailableLocale {
   code: string
@@ -46,36 +45,6 @@ export interface ExportResult {
   /** 解密成功但魔数与期望类型不符的文件数（大概率 key 错误） */
   magicFail?: number
   outputDir?: string
-}
-
-// ---- M2: 存档编辑器 ----
-export type SaveKind = 'mv' | 'mz'
-
-export interface SaveFileInfo {
-  absPath: string
-  name: string
-  ext: string
-  kind: SaveKind | null
-  size: number
-}
-
-export interface OpenSaveDirResult {
-  dir: string
-  files: SaveFileInfo[]
-}
-
-export interface LoadedSave {
-  absPath: string
-  name: string
-  kind: SaveKind
-  contents: Record<string, unknown>
-  size: number
-}
-
-export interface WriteSaveResult {
-  ok: boolean
-  backupPath?: string
-  error?: string
 }
 
 export interface I18nChangedPayload {
@@ -129,8 +98,6 @@ const api = {
   setLocale: (locale: string): Promise<string> => ipcRenderer.invoke('i18n:set', locale),
   t: (key: string, params?: Record<string, string | number>): Promise<string> =>
     ipcRenderer.invoke('i18n:t', key, params),
-  /** 批量翻译：一次取多个 key（渲染 schema 字段/组标题时避免逐字段 IPC） */
-  tMany: (keys: string[]): Promise<Record<string, string>> => ipcRenderer.invoke('i18n:tMany', keys),
   getVersion: (): Promise<string> => ipcRenderer.invoke('app:version'),
   openGitHub: (): Promise<void> => ipcRenderer.invoke('app:openGitHub'),
   checkUpdate: (): Promise<UpdateCheckResult> => ipcRenderer.invoke('app:checkUpdate'),
@@ -172,13 +139,7 @@ const api = {
     ipcRenderer.on('export:progress', listener)
     return () => ipcRenderer.removeListener('export:progress', listener)
   },
-  openSaveDir: (): Promise<OpenSaveDirResult | null> => ipcRenderer.invoke('save:openDir'),
-  scanSaveDir: (dir: string): Promise<SaveFileInfo[]> => ipcRenderer.invoke('save:scanDir', dir),
-  openSaveFile: (): Promise<{ file: string } | null> => ipcRenderer.invoke('save:openFile'),
-  loadSave: (absPath: string): Promise<LoadedSave> => ipcRenderer.invoke('save:load', absPath),
-  writeSave: (absPath: string, contents: unknown, kind: SaveKind): Promise<WriteSaveResult> =>
-    ipcRenderer.invoke('save:write', absPath, contents, kind),
-  // ---- 最近项目/密钥历史 + schema 字段 ----
+  // ---- 最近项目/密钥历史 ----
   getHistory: (): Promise<HistoryEntry[]> => ipcRenderer.invoke('history:list'),
   addHistory: (
     kind: HistoryKind,
@@ -189,7 +150,6 @@ const api = {
   ): Promise<HistoryEntry[]> => ipcRenderer.invoke('history:add', kind, path, label, key, keySource),
   removeHistory: (id: string): Promise<HistoryEntry[]> => ipcRenderer.invoke('history:remove', id),
   clearHistory: (): Promise<HistoryEntry[]> => ipcRenderer.invoke('history:clear'),
-  getSchemas: (): Promise<SaveSchema> => ipcRenderer.invoke('schema:list'),
   // ---- 批量工具：加密 / 图片还原 ----
   /** 当前平台（'win32' / 'darwin' / 'linux'），渲染层据此适配无边框窗口布局 */
   platform: process.platform,

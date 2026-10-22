@@ -11,14 +11,14 @@
 
 <h3><p><a href="README.md">简体中文</a> &nbsp; / &nbsp; <a href="README_en.md">English</a> &nbsp; / &nbsp; 日本語</p></h3>
 
-**RPG Maker MV / MZ** ゲームリソースの復号・暗号化・セーブデータ編集ツール
+**RPG Maker MV / MZ** ゲームリソースの復号・暗号化ツール
 
 </div>
 
 
 ## 📖 1. プロジェクト概要
 
-- 本ツールは、RPG Maker MV / MZ ゲームのリソースを復号・再暗号化し、セーブデータの編集にも対応します。自分で失ったプロジェクトファイルの復元、許可を得た改造（Modding）、学習・研究を目的としています。
+- 本ツールは、RPG Maker MV / MZ ゲームのリソースを復号・再暗号化します。自分で失ったプロジェクトファイルの復元、許可を得た改造（Modding）、学習・研究を目的としています。
 - さらなる機能と使い勝手の改善を継続して行っています…
 
 > [!TIP]
@@ -31,7 +31,6 @@
 - **キー推測**：`System.json`、`rpg_core.js`、または暗号化画像ヘッダーからキーを推測します。
 - **一括処理と性能**：マルチスレッド復号、リアルタイム進捗、キャンセル可能、ファイルごとのタイムアウトで自動スキップ。超大容量ディレクトリはストリーミングスキャンと段階的レンダリングに対応。
 - **エクスポート**：復号結果をフォルダーに書き出すか、`ZIP` に圧縮できます。
-- **セーブエディター**：MV / MZ セーブデータをデコードし、「クイック編集」と「JSON ツリー」の 2 ビューで編集。書き戻す前に自動で `.bak` バックアップを作成します。
 - **多言語**：中文 / English / 日本語を内蔵し、**カスタム言語パック**に対応。
 - **テーマ**：ライト / ダークテーマ。
 - **コマンドライン**：バッチ自動化に便利な完全な CLI。
@@ -54,11 +53,7 @@
 
 対応するタブに切り替え、ファイル/フォルダーと出力先フォルダーを選択し、単体/一括処理を行います。
 
-### 3️⃣ セーブエディター
-
-セーブフォルダーまたは単一のセーブファイルを選択し、クイックフォームまたは JSON ツリーで編集します。保存時には自動バックアップが作成されます。
-
-### 4️⃣ コマンドライン（CLI）
+### 3️⃣ コマンドライン（CLI）
 
 ```bash
 # リソース
@@ -67,10 +62,6 @@ rpgmaker-decrypter encrypt <file> -k <key> [-o out]
 rpgmaker-decrypter restore <file> [-o out]                        # キーなし画像復元
 rpgmaker-decrypter detect-key <dir>                               # キーを自動検出
 rpgmaker-decrypter decode-dir <dir> [-k key] [-o out] [--dry-run] [--jobs 8]
-
-# セーブ
-rpgmaker-decrypter save-decode <file> [-o out.json]
-rpgmaker-decrypter save-encode <json> <out.rpgsave|out.rmmzsave> [--kind mv|mz]
 ```
 
 共通オプション：`--json`（機械可読出力）、`--verbose`（詳細情報）、`--lang <code>`（UI 言語。見つからない場合は英語にフォールバック）。
@@ -139,15 +130,11 @@ npm run package      # インストーラー（NSIS）を生成
 
 - [Petschko/RPG-Maker-MV-Decrypter](https://github.com/Petschko/RPG-Maker-MV-Decrypter)
 - [pieroxy/lz-string](https://github.com/pieroxy/lz-string)
-- [takuyaihara/rpgsave-editor](https://github.com/takuyaihara/rpgsave-editor)
-- [Gteditor99/rpgsave-decode](https://github.com/Gteditor99/rpgsave-decode)
 - [RPG-Maker-Translation-Tools/rpgmdec](https://github.com/RPG-Maker-Translation-Tools/rpgmdec)
 - [RPG-Maker-Translation-Tools/rpgm-archive-decrypter](https://github.com/RPG-Maker-Translation-Tools/rpgm-archive-decrypter)
 - [RPG-Maker-Translation-Tools/rpgm-asset-decrypter-rs](https://github.com/RPG-Maker-Translation-Tools/rpgm-asset-decrypter-rs)
 - [Petschko/Java-RPG-Maker-MV-Decrypter](https://github.com/Petschko/Java-RPG-Maker-MV-Decrypter)
 - [omega-slender/NimRpgMakerDecrypt](https://github.com/omega-slender/NimRpgMakerDecrypt)
-- [paradoxie/saveeditor](https://github.com/paradoxie/saveeditor)
-- [LackoPotato/RPGMakerMVSaveEditor](https://github.com/LackoPotato/RPGMakerMVSaveEditor)
 
 ## ⚖️ 免責事項
 

@@ -7,6 +7,5 @@
 export * from './crypto'
 export * from './i18n'
 export * from './theme'
-export * from './save'
 export * from './history'
 export * from './virtual'

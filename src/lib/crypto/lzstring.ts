@@ -4,9 +4,8 @@
  * 来源：RPG Maker MV 内嵌同款算法（rpg_core.js 中的 LZString 即 1.4.x 系），
  * 参考 `RPG-Maker-MV-Decrypter-petschko/libs/lz-string.js` 逐行等价移植。
  *
- * 本项目使用 `compressToBase64` / `decompressFromBase64` 两处：
- * - 存档 codec：MV `fileN.rpgsave` 磁盘格式（`src/lib/save/codec.ts`）
- * - key 检测兜底：System.json / rpg_core.js 若被 LZString base64 压缩（`src/lib/crypto/keyFinder.ts`）
+ * 本项目的用途：key 检测兜底——System.json / rpg_core.js 若被 LZString base64
+ * 压缩，用 `decompressFromBase64` 解压后再匹配密钥（`src/lib/crypto/keyFinder.ts`）。
  *
  * 压缩/解压核心（_compress / _decompress）保持与官方逐行等价，不优化、不改语义。
  */

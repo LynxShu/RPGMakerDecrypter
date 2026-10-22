@@ -14,7 +14,6 @@ const fs = require('node:fs')
 const os = require('node:os')
 const path = require('node:path')
 const { Decrypter, PNG_HEADER_BYTES } = require('../out-lib/index.js')
-const { encodeSave } = require('../out-lib/save/index.js')
 const { runCli } = require('../out-cli-test/cli/run.js')
 
 const KEY = '0123456789abcdef'
@@ -45,7 +44,6 @@ async function run(args) {
 // ---- 合成样本目录：fake game ----
 const TMP = fs.mkdtempSync(path.join(os.tmpdir(), 'rpgd-cli-'))
 const GAME = path.join(TMP, 'game')
-const SAVE = path.join(TMP, 'save')
 fs.mkdirSync(path.join(GAME, 'data'), { recursive: true })
 fs.mkdirSync(path.join(GAME, 'img'), { recursive: true })
 
@@ -67,11 +65,6 @@ fs.writeFileSync(path.join(GAME, 'img', 'x.png_'), makeEncryptedPng())
 
 // 一个普通（非加密）文件，确保扫描只收集加密扩展名
 fs.writeFileSync(path.join(GAME, 'README.txt'), 'not encrypted', 'utf-8')
-
-// MV 存档样本（save/file1.rpgsave）
-fs.mkdirSync(path.join(SAVE, 'save'), { recursive: true })
-const contents = { system: { _saveCount: 1 }, party: { _gold: 500, '@': 'Game_Party' } }
-fs.writeFileSync(path.join(SAVE, 'save', 'file1.rpgsave'), encodeSave(contents, 'mv'), 'utf-8')
 
 async function main() {
   console.log('验证 CLI 基础命令:')
@@ -169,23 +162,6 @@ async function main() {
     const r = await run(['decode-dir', empty])
     assert.equal(r.code, 1)
     assert.match(r.err, /No encryption key|密钥/) // 默认 en 或 --lang 中文
-  })
-
-  console.log('验证 save-decode / save-encode:')
-  await ok('save-decode 输出 JSON 且 save-encode 往返', async () => {
-    const src = path.join(SAVE, 'save', 'file1.rpgsave')
-    const jsonFile = path.join(TMP, 'out.json')
-    let r = await run(['save-decode', '-o', jsonFile, src])
-    assert.equal(r.code, 0)
-    const parsed = JSON.parse(fs.readFileSync(jsonFile, 'utf-8'))
-    assert.equal(parsed.party._gold, 500)
-    assert.equal(parsed.party['@'], 'Game_Party')
-    // 编码回写
-    const outSave = path.join(TMP, 'roundtrip.rpgsave')
-    r = await run(['save-encode', jsonFile, outSave])
-    assert.equal(r.code, 0)
-    const raw = fs.readFileSync(outSave, 'utf-8')
-    assert.match(raw, /^[A-Za-z0-9+/=]+$/) // MV = base64 文本
   })
 
   console.log(`\n结果: ${passed} 通过, ${failed} 失败`)

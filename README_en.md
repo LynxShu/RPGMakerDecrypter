@@ -11,14 +11,14 @@
 
 <h3><p><a href="README.md">简体中文</a> &nbsp; / &nbsp; English &nbsp; / &nbsp; <a href="README_jp.md">日本語</a></p></h3>
 
-**RPG Maker MV / MZ** game resource decryption, encryption, and save-editing tool
+**RPG Maker MV / MZ** game resource decryption and encryption tool
 
 </div>
 
 
 ## 📖 1. Introduction
 
-- This tool decrypts or re-encrypts resources from RPG Maker MV / MZ games and can also edit game save files. It is intended for recovering your own lost project files, authorized modding, and learning/research.
+- This tool decrypts or re-encrypts resources from RPG Maker MV / MZ games. It is intended for recovering your own lost project files, authorized modding, and learning/research.
 - More features and usability improvements are on the way...
 
 > [!TIP]
@@ -31,7 +31,6 @@
 - **Key inference**: derive the key from `System.json`, `rpg_core.js`, or the encrypted image header.
 - **Bulk & performance**: multithreaded decryption with real-time progress, cancellable, and a per-file timeout that automatically skips; streamed scanning and progressive rendering for very large folders.
 - **Export**: export the decrypted results to a folder or package them as a `ZIP`.
-- **Save editor**: decode MV / MZ save files with both a quick-editor and a JSON tree view, with an automatic `.bak` backup before writing back.
 - **Multilingual**: built-in 简体中文 / English / 日本語, plus support for **custom language packs**.
 - **Theme**: light and dark themes.
 - **CLI**: a complete command-line interface for batch automation.
@@ -54,11 +53,7 @@
 
 Switch to the corresponding tab, select files/folders and an output folder, then process them individually or in batch.
 
-### 3️⃣ Save editor
-
-Select a save folder or a single save file, edit with the quick form or the JSON tree, and a backup is created automatically when saving.
-
-### 4️⃣ Command line (CLI)
+### 3️⃣ Command line (CLI)
 
 ```bash
 # Assets
@@ -67,10 +62,6 @@ rpgmaker-decrypter encrypt <file> -k <key> [-o out]
 rpgmaker-decrypter restore <file> [-o out]                        # image recovery without a key
 rpgmaker-decrypter detect-key <dir>                               # auto-detect the key
 rpgmaker-decrypter decode-dir <dir> [-k key] [-o out] [--dry-run] [--jobs 8]
-
-# Saves
-rpgmaker-decrypter save-decode <file> [-o out.json]
-rpgmaker-decrypter save-encode <json> <out.rpgsave|out.rmmzsave> [--kind mv|mz]
 ```
 
 Common options: `--json` (machine-readable output), `--verbose` (more detail), `--lang <code>` (interface language; falls back to English if not found).
@@ -139,15 +130,11 @@ This project references the following open-source projects in its design and imp
 
 - [Petschko/RPG-Maker-MV-Decrypter](https://github.com/Petschko/RPG-Maker-MV-Decrypter)
 - [pieroxy/lz-string](https://github.com/pieroxy/lz-string)
-- [takuyaihara/rpgsave-editor](https://github.com/takuyaihara/rpgsave-editor)
-- [Gteditor99/rpgsave-decode](https://github.com/Gteditor99/rpgsave-decode)
 - [RPG-Maker-Translation-Tools/rpgmdec](https://github.com/RPG-Maker-Translation-Tools/rpgmdec)
 - [RPG-Maker-Translation-Tools/rpgm-archive-decrypter](https://github.com/RPG-Maker-Translation-Tools/rpgm-archive-decrypter)
 - [RPG-Maker-Translation-Tools/rpgm-asset-decrypter-rs](https://github.com/RPG-Maker-Translation-Tools/rpgm-asset-decrypter-rs)
 - [Petschko/Java-RPG-Maker-MV-Decrypter](https://github.com/Petschko/Java-RPG-Maker-MV-Decrypter)
 - [omega-slender/NimRpgMakerDecrypt](https://github.com/omega-slender/NimRpgMakerDecrypt)
-- [paradoxie/saveeditor](https://github.com/paradoxie/saveeditor)
-- [LackoPotato/RPGMakerMVSaveEditor](https://github.com/LackoPotato/RPGMakerMVSaveEditor)
 
 ## ⚖️ Disclaimer
 
