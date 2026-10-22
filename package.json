@@ -1,6 +1,6 @@
 {
   "name": "rpgmaker-decrypter",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "RPG Maker MV/MZ 资源解密、存档编辑与汉化辅助工具（Electron + TypeScript 重写）",
   "author": "LynxShu",
   "license": "MIT",
@@ -19,8 +19,8 @@
     "cli": "tsx src/cli/index.ts",
     "cli:test": "node scripts/prepare-cli-test.cjs && node scripts/verify-cli.cjs",
     "watch:test": "node node_modules/typescript/bin/tsc -p tsconfig.buildmain.json && node scripts/verify-watch.cjs && node scripts/verify-pool.cjs",
-    "package": "npm run build && electron-builder",
-    "package:dir": "npm run build && electron-builder --dir"
+    "package": "npm run build && node scripts/electron-builder.cjs",
+    "package:dir": "npm run build && node scripts/electron-builder.cjs --dir"
   },
   "dependencies": {
     "commander": "^12.1.0",

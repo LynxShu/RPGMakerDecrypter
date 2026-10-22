@@ -85,12 +85,30 @@ rpgmaker-decrypter save-encode <json> <out.rpgsave|out.rmmzsave> [--kind mv|mz]
 
 1. **复制**：把 `_template.json` 复制一份，重命名为目标语言名称，如 `fr.json`、`de.json`。
    - 源码版：模版在项目根目录 `locales/_template.json`；
-   - 打包版：首次启动后，在 `%APPDATA%\rpgmaker-decrypter\locales\` 中即可看到。
+   - 打包版（绿色版）：模版默认在 `<程序目录>\rpgmaker-decrypter\locales\`；
+   - 若程序目录不可写（如放在 `C:\Program Files` 或只读磁盘），则回退到 `%APPDATA%\rpgmaker-decrypter\locales\`。
 2. **改名**：文件开头的 `"__meta": { "name": "…" }` 改成语言名称（会显示在软件右上角语言下拉框中），如 `"Français"`。
 3. **翻译**：把每个 key 后面引号里的英文改成你的语言，保存即可。下拉框里马上出现新语言。
 
 > [!NOTE]
 > 模版含**全部**文案 key；可以只保留想要修改的键值，不存在的键值将会自动回退英文。
+
+## 💾 数据存放位置（便携模式）
+
+Windows 打包版（绿色版）默认把应用数据保存在 `<程序目录>\rpgmaker-decrypter\`，整个文件夹可随程序一起放在 U 盘或移动硬盘中携带：
+
+| 路径 | 用途 |
+| --- | --- |
+| `config.json` | 界面语言、主题等偏好设置 |
+| `history.json` | 最近项目与密钥历史 |
+| `locales\` | 自定义语言包（见上一节） |
+| `cache\` | 解密临时缓存，退出或启动时自动清理 |
+
+- **回退**：若程序目录不可写（如放在 `C:\Program Files` 或只读磁盘），则改用系统默认的 `%APPDATA%\rpgmaker-decrypter\`。
+- **首次便携启动**：若目标目录尚不存在，会把 `%APPDATA%\rpgmaker-decrypter` 中已有的 `config.json`、`history.json` 和 `locales\` 迁移过来，仅补齐缺失项，不覆盖已有文件。
+- **环境变量覆盖**：把环境变量 `RPGMD_DATA_DIR` 设为绝对路径可强制指定数据目录，在任何模式下都生效；开发模式未设置时使用系统默认目录。
+- **缓存**：便携模式下临时缓存位于数据目录的 `cache\`，其他情况位于 `%TEMP%\rpgmaker-decrypter`。
+- macOS / Linux 没有便携模式，始终使用系统默认目录。
 
 ## 🧪 开发与测试
 

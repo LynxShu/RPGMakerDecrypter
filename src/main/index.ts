@@ -24,8 +24,70 @@ import { targetRelPath, type DecryptJob } from './decryptCore'
 import { findSaveFiles, loadSave, writeSave, type SaveFileInfo } from './saveCore'
 import { createHistoryStore } from './historyStore'
 import { createConfigStore, type AppConfig } from './configStore'
+import { ensureWritableDir, migrateLegacyData, resolveDataDir } from './dataDir'
 import { loadMergedSchema } from './schemaLoader'
 import type { SaveKind } from '@lib/save'
+
+// ---- 数据目录（便携模式）----
+// 发布物是解压即用的 zip：打包版把 userData 放到 exe 同级 rpgmaker-decrypter\，
+// 避免强制写 C 盘 %APPDATA%，整包拷走即带走设置/历史/语言包（详见 dataDir.ts）。
+// 必须在任何 app.getPath('userData') 读取与 app 'ready' 之前 setPath，
+// 否则 Chromium 已按默认路径初始化缓存/存储。
+function systemDirsForPortable(): string[] {
+  return [
+    process.env.ProgramFiles,
+    process.env['ProgramFiles(x86)'],
+    process.env.ProgramW6432,
+    process.env.windir,
+    process.env.SystemRoot,
+    process.env.ProgramData,
+    process.env.APPDATA,
+    process.env.LOCALAPPDATA,
+    process.env.TEMP,
+    process.env.TMP
+  ].filter((dir): dir is string => typeof dir === 'string' && dir.length > 0)
+}
+
+const defaultUserDataDir = app.getPath('userData')
+const initialDataDir = resolveDataDir({
+  isPackaged: app.isPackaged,
+  platform: process.platform,
+  exePath: process.execPath,
+  defaultDir: defaultUserDataDir,
+  envDir: process.env.RPGMD_DATA_DIR,
+  isWritable: ensureWritableDir,
+  systemDirs: systemDirsForPortable()
+})
+/** 便携目录在本次启动前是否还不存在（只在这时做一次性旧数据迁移） */
+const portableDirFresh = initialDataDir.mode === 'portable' && !existsSync(initialDataDir.dir)
+let dataDir = initialDataDir.dir
+let portableDataDir = initialDataDir.mode === 'portable'
+if (portableDataDir && !ensureWritableDir(dataDir)) {
+  // exe 同级不可写（只读介质 / 受限 ACL）：回退默认 userData，保证设置仍能保存
+  console.warn(`[data] 便携目录不可写（${dataDir}），回退默认位置`)
+  dataDir = defaultUserDataDir
+  portableDataDir = false
+}
+if (portableDataDir && portableDirFresh) {
+  const migrated = migrateLegacyData(defaultUserDataDir, dataDir)
+  if (migrated.length > 0) console.log(`[data] 已从旧数据目录迁移：${migrated.join(', ')}`)
+}
+app.setPath('userData', dataDir)
+// Chromium 的缓存/Cookies 等 session 数据默认跟随 userData；显式指定以防版本默认值差异
+try {
+  app.setPath('sessionData', dataDir)
+} catch {
+  /* 旧版 Electron 无 sessionData path，忽略 */
+}
+// 崩溃转储也别落到系统盘
+try {
+  const crashDir = join(dataDir, 'crashDumps')
+  mkdirSync(crashDir, { recursive: true })
+  app.setPath('crashDumps', crashDir)
+} catch {
+  /* 设置失败不致命 */
+}
+console.log(`[data] userData = ${dataDir}（${portableDataDir ? '便携模式' : '默认位置'}）`)
 
 const i18n = createI18n({ defaultLocale: 'zh-Hans', fallbackLocale: 'en' })
 
@@ -34,18 +96,19 @@ let scanController: AbortController | null = null
 let exportController: AbortController | null = null
 let toolController: AbortController | null = null
 
-// 最近项目/密钥历史（bootstrap 时按 userData 路径创建）
-let history = createHistoryStore(join(app.getPath('userData'), 'history.json'))
+// 最近项目/密钥历史（bootstrap 时按数据目录创建：便携模式在 exe 同级，否则 %APPDATA%）
+let history = createHistoryStore(join(dataDir, 'history.json'))
 
 // 应用偏好（locale / theme 持久化，蓝图 §11.1「选择写入 config」）
-let config = createConfigStore(join(app.getPath('userData'), 'config.json'))
+let config = createConfigStore(join(dataDir, 'config.json'))
 
 // locales/ 热监视（蓝图 §11.1：放入新语言包即热切换）
 let localeWatcher: ReturnType<typeof watchLocalesDir> | null = null
 
-/** 解密结果缓存根目录（temp/rpgmaker-decrypter，其下每个会话一个 decrypt-<uuid> 子目录） */
+/** 解密结果缓存根目录（其下每个会话一个 decrypt-<uuid> 子目录）。
+ *  便携模式放到数据目录 cache/（不往 C 盘 %TEMP% 写大文件）；否则仍用系统临时目录。 */
 function decryptCacheRoot(): string {
-  return join(app.getPath('temp'), 'rpgmaker-decrypter')
+  return portableDataDir ? join(dataDir, 'cache') : join(app.getPath('temp'), 'rpgmaker-decrypter')
 }
 
 /** 当前会话的解密缓存目录：点击「开始解密」把解密结果落到这里，导出时再从缓存拷走/打包 */
@@ -744,7 +807,7 @@ async function bootstrap(): Promise<void> {
   // 语言包目录：内置（asar / 项目 locales）+ 用户自定义（userData/locales，后加载可覆盖同名 code）。
   // 打包后内置在只读 asar 里，用户自定义目录才是「丢一个 json 即多一种语言」的可写入口。
   const builtinLocales = join(app.getAppPath(), 'locales')
-  const userLocales = join(app.getPath('userData'), 'locales')
+  const userLocales = join(dataDir, 'locales')
   mkdirSync(userLocales, { recursive: true })
   // 首次启动把内置语言模版复制到用户目录（之后不覆盖，保留用户已改内容），
   // 打包版用户可直接复制该文件改名做成新语言（见 README「自定义语言包」）

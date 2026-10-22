@@ -6,6 +6,12 @@ directories:
   output: release
   buildResources: build
 
+# Electron 发行包下载缓存固定到仓库内（.gitignore 已忽略）。
+# 默认缓存位置是 %LOCALAPPDATA%\electron\Cache，在没有该目录写权限的终端（受限令牌/沙箱）里
+# 打包会报 “mkdir C:\Users\<用户>\AppData\Local\electron: Access is denied”，改这里即可。
+electronDownload:
+  cache: .electron-cache
+
 files:
   - out/**
   - locales/**

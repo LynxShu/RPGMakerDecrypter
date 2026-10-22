@@ -85,12 +85,30 @@ A language pack is a JSON file. The project ships a complete template; after you
 
 1. **Copy**: duplicate `_template.json` and rename it to the target language name, e.g. `fr.json`, `de.json`.
    - From source: the template is at the project root, `locales/_template.json`;
-   - Packaged app: after the first launch it is available in `%APPDATA%\rpgmaker-decrypter\locales\`.
+   - Packaged (portable) app: the template is in `<program folder>\rpgmaker-decrypter\locales\`;
+   - If the program folder is not writable (e.g. under `C:\Program Files` or a read-only drive), it falls back to `%APPDATA%\rpgmaker-decrypter\locales\`.
 2. **Rename**: change `"__meta": { "name": "…" }` at the top of the file to the language's own name (shown in the language dropdown in the top-right corner), e.g. `"Français"`.
 3. **Translate**: replace the English text in quotes after each key with your language and save. The new language appears in the dropdown immediately.
 
 > [!NOTE]
 > The template contains **all** message keys. You can keep only the keys you want to change; missing keys automatically fall back to English.
+
+## 💾 Data location (portable mode)
+
+The packaged Windows app (portable build) keeps its data in `<program folder>\rpgmaker-decrypter\`, so the whole folder can travel with the app on a USB stick or external drive:
+
+| Path | Contents |
+| --- | --- |
+| `config.json` | UI language, theme, and other preferences |
+| `history.json` | Recent projects and key history |
+| `locales\` | Custom language packs (see the previous section) |
+| `cache\` | Temporary decryption cache, cleaned up automatically on exit/start |
+
+- **Fallback**: if the program folder is not writable (e.g. under `C:\Program Files` or a read-only drive), the system default `%APPDATA%\rpgmaker-decrypter\` is used instead.
+- **First portable launch**: if the target folder did not exist yet, existing `config.json`, `history.json` and `locales\` are migrated from `%APPDATA%\rpgmaker-decrypter`; missing entries only, existing files are never overwritten.
+- **Environment override**: set `RPGMD_DATA_DIR` to an absolute path to force the data directory in every mode; without it, development mode uses the system default.
+- **Cache**: in portable mode the temporary cache lives in the data folder's `cache\`; otherwise it is placed in `%TEMP%\rpgmaker-decrypter`.
+- macOS / Linux have no portable mode and always use the system default data folder.
 
 ## 🧪 Development & Testing
 
