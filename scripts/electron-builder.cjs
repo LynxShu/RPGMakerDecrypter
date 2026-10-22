@@ -91,6 +91,22 @@ async function main() {
     env
   })
   if (result.error) throw result.error
+
+  // 打包后校验 exe 图标资源：旧版 rcedit 会把 ≥64KB 帧的尺寸字段截断，导致任务栏图标错乱。
+  if (result.status === 0) {
+    const exe = path.join(root, 'release', 'win-unpacked', 'RPGMakerDecrypter.exe')
+    if (fs.existsSync(exe)) {
+      const verify = spawnSync(
+        process.execPath,
+        [path.join(__dirname, 'verify-exe-icons.cjs'), exe, '--fix'],
+        { stdio: 'inherit' }
+      )
+      if (verify.status !== 0) {
+        console.warn('[package] ⚠ exe 图标资源校验未通过（见上），请检查 build/icon.ico')
+      }
+    }
+  }
+
   process.exit(result.status ?? 1)
 }
 

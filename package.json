@@ -20,7 +20,9 @@
     "cli:test": "node scripts/prepare-cli-test.cjs && node scripts/verify-cli.cjs",
     "watch:test": "node node_modules/typescript/bin/tsc -p tsconfig.buildmain.json && node scripts/verify-watch.cjs && node scripts/verify-pool.cjs",
     "package": "npm run build && node scripts/electron-builder.cjs",
-    "package:dir": "npm run build && node scripts/electron-builder.cjs --dir"
+    "package:dir": "npm run build && node scripts/electron-builder.cjs --dir",
+    "icon": "node scripts/build-icon.cjs",
+    "verify:icons": "node scripts/verify-exe-icons.cjs"
   },
   "dependencies": {
     "commander": "^12.1.0",
