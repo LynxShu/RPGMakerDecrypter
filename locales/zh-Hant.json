@@ -29,7 +29,10 @@
     "statMagic": "魔數未通過",
     "keyOk": "✓ 金鑰驗證通過",
     "keyBad": "✗ 金鑰驗證失敗（解密後的魔術數字不符，請確認金鑰是否正確）",
-    "magicFail": "有 {count} 個檔案未通過魔術數字檢查（金鑰可能有誤？）"
+    "magicFail": "有 {count} 個檔案未通過魔術數字檢查（金鑰可能有誤？）",
+    "emptyList": "尚未選擇遊戲資料夾",
+    "openOutput": "開啟輸出資料夾",
+    "runWithKey": "用目前金鑰解密"
   },
   "encrypt": {
     "pickFile": "選取明文檔案",
@@ -39,7 +42,9 @@
     "start": "開始加密",
     "key": "加密金鑰（十六進位）",
     "fileList": "檔案清單",
-    "openOutput": "開啟輸出資料夾"
+    "openOutput": "開啟輸出資料夾",
+    "emptyList": "選取明文檔案或資料夾",
+    "noFiles": "找不到可加密的檔案（png / ogg / m4a）"
   },
   "restore": {
     "pickFile": "選取已加密的圖片",
@@ -48,7 +53,9 @@
     "start": "開始還原",
     "hint": "僅支援圖片（.rpgmvp / .png_），其他檔案將被略過",
     "fileList": "檔案清單",
-    "openOutput": "開啟輸出資料夾"
+    "openOutput": "開啟輸出資料夾",
+    "emptyList": "選取已加密的圖片或資料夾",
+    "noFiles": "找不到可還原的圖片（rpgmvp / png_）"
   },
   "error": {
     "emptyFile": "檔案為空或無法讀取。",
@@ -69,7 +76,8 @@
     "latest": "已是最新版本",
     "available": "有新版本 {version} 可供下載",
     "download": "下載",
-    "close": "關閉"
+    "close": "關閉",
+    "checkFailedDetail": "檢查更新失敗：{error}"
   },
   "toolbar": {
     "locale": "切換語言",
@@ -82,9 +90,16 @@
     "failed": "{count} 個檔案處理失敗",
     "skipped": "已略過 {count} 個檔案",
     "cancelled": "操作已取消",
-    "working": "處理中…"
+    "working": "處理中…",
+    "progress": "{pct}% ({done}/{total}) · 成功 {ok} · 失敗 {fail}",
+    "progressSkip": "{pct}% ({done}/{total}) · 成功 {ok} · 失敗 {fail} · 略過 {skip}",
+    "packingZip": "封裝 ZIP… {pct}%",
+    "exported": "已匯出 {count} 個檔案",
+    "packed": "已封裝 {count} 個檔案為 ZIP",
+    "savedTo": "已儲存至 {path}"
   },
   "tool": {
-    "found": "找到 {count} 個可處理的檔案"
+    "found": "找到 {count} 個可處理的檔案",
+    "more": "… 共 {count} 個檔案"
   }
 }

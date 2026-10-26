@@ -30,7 +30,11 @@ const state = {
   scanJobId: '',
   scanning: false,
   processing: false,
-  exporting: false
+  exporting: false,
+  /** 最近一次导出的路径（文件目录或 ZIP 文件），用于「打开输出目录」 */
+  exportPath: '',
+  /** exportPath 是否为 ZIP 文件（否则为目录） */
+  exportIsFile: false
 }
 
 // 当前任务的事件订阅
@@ -49,6 +53,14 @@ function formatBytes(n: number): string {
   let u = -1
   do { v /= 1024; u++ } while (v >= 1024 && u < units.length - 1)
   return `${v < 10 ? v.toFixed(1) : Math.round(v)} ${units[u]}`
+}
+
+/** 渲染层本地模板替换（i18n 文案在建立监听器时预取一次，避免每个进度事件都走 IPC） */
+function fillTemplate(template: string, params: Record<string, string | number>): string {
+  return template.replace(/\{(\w+)\}/g, (match, name: string) => {
+    const value = params[name]
+    return value === undefined ? match : String(value)
+  })
 }
 
 function initFileList(): void {
@@ -133,7 +145,12 @@ function formatVersion(v: string): string {
 function bindI18nHotReload(): void {
   dsh.onI18nChanged((payload) => {
     rebuildLocaleMenu(payload.locales, payload.current)
-    void refreshI18n()
+    void refreshI18n().then(() => {
+      // 空态/列表随语言切换重绘（运行中的状态行文本仍在下一次事件刷新）
+      void renderFileList()
+      void renderToolFileList(encUi)
+      void renderToolFileList(resUi)
+    })
   })
 }
 
@@ -288,8 +305,11 @@ async function checkUpdate(): Promise<void> {
     showToast(toastRow(await dsh.t('update.checking')))
     const res = await dsh.checkUpdate()
     if (!res.ok) {
-      // 检查失败：静默，几秒后自动消失（与「已是最新」同处理）
-      showToast(toastRow(await dsh.t('update.checkFailed')), 3000)
+      // 检查失败：几秒后自动消失；有错误详情时一并显示，便于判断网络/代理问题
+      const failed = res.error
+        ? await dsh.t('update.checkFailedDetail', { error: res.error })
+        : await dsh.t('update.checkFailed')
+      showToast(toastRow(failed), 3000)
       return
     }
     if (!res.hasUpdate) {
@@ -339,7 +359,7 @@ async function renderFileList(): Promise<void> {
     list.innerHTML = ''
     const empty = document.createElement('div')
     empty.className = 'file-empty muted'
-    empty.textContent = await dsh.t('error.noEncryptedFiles')
+    empty.textContent = await dsh.t(state.dir ? 'error.noEncryptedFiles' : 'crypto.emptyList')
     list.appendChild(empty)
     return
   }
@@ -362,7 +382,7 @@ function setScanStatus(text: string): void {
   if (el) el.textContent = text
 }
 
-/** 更新解密主按钮（FAB）的状态：开始 / 扫描取消 / 解密取消 / 导出取消 */
+/** 更新解密主按钮（FAB）的状态：开始 / 用当前密钥解密 / 取消 */
 function updateDecryptFab(): void {
   const btn = $('#scanBtn') as HTMLButtonElement
   const busy = state.scanning || state.processing || state.exporting
@@ -371,13 +391,22 @@ function updateDecryptFab(): void {
     void dsh.t('crypto.cancel').then((t) => (btn.textContent = t))
     btn.classList.add('danger')
     btn.disabled = false
-  } else {
-    void dsh.t('crypto.startDecrypt').then((t) => {
-      btn.textContent = t
-      btn.disabled = !state.dir
-    })
-    btn.classList.remove('danger')
+    return
   }
+  btn.classList.remove('danger')
+  const inputKey = ($('#keyInput') as HTMLInputElement).value.trim()
+  const manual = state.files.length > 0 && inputKey !== '' && inputKey !== state.key
+  if (manual) {
+    void dsh.t('crypto.runWithKey').then((t) => {
+      btn.textContent = t
+      btn.disabled = false
+    })
+    return
+  }
+  void dsh.t('crypto.startDecrypt').then((t) => {
+    btn.textContent = t
+    btn.disabled = !state.dir
+  })
 }
 
 function setScanningUI(on: boolean): void {
@@ -439,8 +468,11 @@ async function startDecrypt(dir: string): Promise<void> {
   ;($('#keyInput') as HTMLInputElement).value = ''
   ;($('#exportBtn') as HTMLButtonElement).disabled = true
   ;($('#exportZipBtn') as HTMLButtonElement).disabled = true
+  state.exportPath = ''
+  state.exportIsFile = false
+  ;($('#openOutBtn') as HTMLButtonElement).disabled = true
+  ;($('#openOutBtn') as HTMLElement).removeAttribute('data-tip')
   void setKeyState(null, '')
-  setProgress('scanProgress', 0, false)
   setProgress('exportProgress', 0, false)
   setScanStatus(await dsh.t('crypto.scanning'))
   setScanningUI(true)
@@ -482,15 +514,16 @@ async function setScanStatusFromFound(found: number): Promise<void> {
 }
 
 // ---- 解密到缓存（「开始解密」的真正执行） ----
-async function runProcess(): Promise<void> {
-  if (state.files.length === 0 || !state.key) return
+async function runProcess(key: string = state.key): Promise<void> {
+  if (state.files.length === 0 || !key) return
+  state.key = key
   const box = $('#scanStatus') as HTMLElement
   setProcessUI(true)
   box.textContent = await dsh.t('task.working')
   setProgress('exportProgress', 0, true)
-  const unsubscribe = bindExportProgress(box)
+  const unsubscribe = await bindExportProgress(box)
   try {
-    const res = await dsh.processAll(state.files, state.key)
+    const res = await dsh.processAll(state.files, key)
     if (res.canceled) {
       box.textContent = await dsh.t('task.cancelled')
     } else {
@@ -499,6 +532,9 @@ async function runProcess(): Promise<void> {
       box.textContent = text
       ;($('#exportBtn') as HTMLButtonElement).disabled = false
       ;($('#exportZipBtn') as HTMLButtonElement).disabled = false
+      // 手动修正密钥后重跑时，用结果反哺密钥校验状态
+      if ((res.magicFail ?? 0) > 0) await setKeyState(false, 'crypto.keyBad')
+      else if (res.ok > 0) await setKeyState(true, 'crypto.keyOk')
     }
     $('#statOk').textContent = String(res.ok)
     $('#statFail').textContent = String(res.fail)
@@ -512,11 +548,24 @@ async function runProcess(): Promise<void> {
 }
 
 // ---- 导出（从缓存拷走/打包） ----
-function bindExportProgress(box: HTMLElement): () => void {
+async function bindExportProgress(box: HTMLElement): Promise<() => void> {
+  // 模板预取一次，避免每个进度事件都走一次 IPC
+  const progressTpl = await dsh.t('task.progress')
   return dsh.onExportProgress((p) => {
     const pct = p.total > 0 ? Math.round((p.done / p.total) * 100) : 0
     setProgress('exportProgress', pct, true)
-    const base = `${pct}% (${p.done}/${p.total})  成功 ${p.ok}  失败 ${p.fail}`
+    if (p.phase === 'pack') {
+      // ZIP 打包阶段：ok/fail 无意义，只显示打包提示（进度条已表达百分比）
+      box.textContent = p.current ?? `${pct}% (${p.done}/${p.total})`
+      return
+    }
+    const base = fillTemplate(progressTpl, {
+      pct,
+      done: p.done,
+      total: p.total,
+      ok: p.ok,
+      fail: p.fail
+    })
     box.textContent = p.current ? `${base}\n${p.current}` : base
     $('#statOk').textContent = String(p.ok)
     $('#statFail').textContent = String(p.fail)
@@ -529,13 +578,22 @@ async function runExport(mode: 'files' | 'zip'): Promise<void> {
   setExportingUI(true)
   box.textContent = await dsh.t('task.working')
   setProgress('exportProgress', 0, true)
-  const unsubscribe = bindExportProgress(box)
+  const unsubscribe = await bindExportProgress(box)
   try {
     const res = mode === 'files' ? await dsh.exportFiles() : await dsh.exportZip()
     if (res.canceled) {
       box.textContent = await dsh.t('task.cancelled')
     } else {
-      const text = await dsh.t('task.completed', { count: res.ok })
+      const doneKey = mode === 'files' ? 'task.exported' : 'task.packed'
+      let text = await dsh.t(doneKey, { count: res.ok })
+      if (res.outputDir) {
+        state.exportPath = res.outputDir
+        state.exportIsFile = mode === 'zip'
+        text += '\n' + (await dsh.t('task.savedTo', { path: res.outputDir }))
+        const openOut = $('#openOutBtn') as HTMLButtonElement
+        openOut.disabled = false
+        setButtonTooltip('#openOutBtn', res.outputDir)
+      }
       box.textContent = text
       $('#statOk').textContent = String(res.ok)
     }
@@ -559,14 +617,22 @@ async function resetDecrypt(): Promise<void> {
   state.scanning = false
   state.processing = false
   state.exporting = false
+  state.exportPath = ''
+  state.exportIsFile = false
   ;($('#keyInput') as HTMLInputElement).value = ''
   ;($('#keyInput') as HTMLInputElement).disabled = false
   ;($('#openBtn') as HTMLButtonElement).disabled = false
   ;($('#exportBtn') as HTMLButtonElement).disabled = true
   ;($('#exportZipBtn') as HTMLButtonElement).disabled = true
+  const openOut = $('#openOutBtn') as HTMLButtonElement
+  openOut.disabled = true
+  openOut.removeAttribute('data-tip')
+  $('#statTotal').textContent = '—'
+  $('#statOk').textContent = '—'
+  $('#statFail').textContent = '—'
+  $('#statMagic').textContent = '—'
   await setKeyState(null, '')
   setScanStatus('')
-  setProgress('scanProgress', 0, false)
   setProgress('exportProgress', 0, false)
   await renderFileList()
   updateDecryptFab()
@@ -656,7 +722,8 @@ async function renderToolFileList(spec: ToolUiSpec): Promise<void> {
   if (state.files.length === 0) {
     const empty = document.createElement('div')
     empty.className = 'file-empty muted'
-    empty.textContent = await dsh.t('error.noEncryptedFiles')
+    const prefix = spec.mode === 'encrypt' ? 'encrypt' : 'restore'
+    empty.textContent = await dsh.t(`${prefix}.${state.label ? 'noFiles' : 'emptyList'}`)
     list.appendChild(empty)
     return
   }
@@ -678,7 +745,7 @@ async function renderToolFileList(spec: ToolUiSpec): Promise<void> {
     const more = document.createElement('div')
     more.className = 'muted'
     more.style.padding = '4px 10px'
-    more.textContent = `… 共 ${state.files.length} 个文件`
+    more.textContent = await dsh.t('tool.more', { count: state.files.length })
     list.appendChild(more)
   }
 }
@@ -746,9 +813,10 @@ async function pickToolDir(spec: ToolUiSpec): Promise<void> {
   const files = await dsh.listFilesByExt(dir, spec.exts)
   await setToolFiles(spec, files, dir, spec.pickDirSel)
   const status = $(spec.statusSel) as HTMLElement
+  const prefix = spec.mode === 'encrypt' ? 'encrypt' : 'restore'
   status.textContent = files.length
     ? await dsh.t('tool.found', { count: files.length })
-    : await dsh.t('error.noEncryptedFiles')
+    : await dsh.t(`${prefix}.noFiles`)
 }
 
 async function pickToolOutput(spec: ToolUiSpec): Promise<void> {
@@ -767,7 +835,7 @@ function setToolRunning(spec: ToolUiSpec, on: boolean): void {
   disable(spec.pickFileSel)
   disable(spec.pickDirSel)
   disable(spec.outSel)
-  disable('#encKey')
+  if (spec.mode === 'encrypt') disable('#encKey')
   updateToolFab(spec)
 }
 
@@ -777,11 +845,19 @@ function resetToolStats(spec: ToolUiSpec): void {
   $(spec.statSkipSel).textContent = '0'
 }
 
-function bindToolProgress(spec: ToolUiSpec, statusEl: HTMLElement): () => void {
+async function bindToolProgress(spec: ToolUiSpec, statusEl: HTMLElement): Promise<() => void> {
+  const progressTpl = await dsh.t('task.progressSkip')
   return dsh.onToolProgress((p) => {
     const pct = p.total > 0 ? Math.round((p.done / p.total) * 100) : 0
     setProgress(spec.progressId, pct, true)
-    const base = `${pct}% (${p.done}/${p.total})  成功 ${p.ok}  失败 ${p.fail}  跳过 ${p.skip}`
+    const base = fillTemplate(progressTpl, {
+      pct,
+      done: p.done,
+      total: p.total,
+      ok: p.ok,
+      fail: p.fail,
+      skip: p.skip
+    })
     statusEl.textContent = p.current ? `${base}\n${p.current}` : base
     $(spec.statOkSel).textContent = String(p.ok)
     $(spec.statFailSel).textContent = String(p.fail)
@@ -813,7 +889,7 @@ async function runTool(spec: ToolUiSpec): Promise<void> {
   const statusEl = $(spec.statusSel) as HTMLElement
   statusEl.textContent = await dsh.t('task.working')
   setProgress(spec.progressId, 0, true)
-  const unsubscribe = bindToolProgress(spec, statusEl)
+  const unsubscribe = await bindToolProgress(spec, statusEl)
   try {
     const res =
       mode === 'encrypt'
@@ -833,13 +909,8 @@ async function runTool(spec: ToolUiSpec): Promise<void> {
       if (res.fail > 0) text += '\n' + (await dsh.t('task.failed', { count: res.fail }))
       if (res.skip > 0) text += '\n' + (await dsh.t('task.skipped', { count: res.skip }))
       statusEl.textContent = text
-      // 完成后启用「打开输出目录」
-      const openBtn = $(spec.openOutSel) as HTMLButtonElement
-      const outDir = res.outputDir
-      if (outDir) {
-        openBtn.disabled = false
-        openBtn.onclick = () => void dsh.openPath(outDir)
-      }
+      // 完成后启用「打开输出目录」（点击行为统一在 bind() 里绑定，避免重复触发）
+      if (res.outputDir) ($(spec.openOutSel) as HTMLButtonElement).disabled = false
     }
   } finally {
     unsubscribe()
@@ -859,7 +930,8 @@ async function toolFilesFromDrop(spec: ToolUiSpec, path: string): Promise<void> 
     await setToolFiles(spec, [{ absPath: path, relPath: basenameOf(path), ext, size: -1 }], path, spec.pickFileSel)
   } else {
     await setToolFiles(spec, [], path, spec.pickFileSel)
-    ;($(spec.statusSel) as HTMLElement).textContent = await dsh.t('error.noEncryptedFiles')
+    const prefix = spec.mode === 'encrypt' ? 'encrypt' : 'restore'
+    ;($(spec.statusSel) as HTMLElement).textContent = await dsh.t(`${prefix}.noFiles`)
   }
 }
 
@@ -869,6 +941,9 @@ function bind(): void {
     const dir = await dsh.selectDir()
     if (!dir) return
     state.dir = dir // 修复：之前只显示路径，没写 state.dir，导致「开始解密」无效
+    // 换目录视为新会话：清掉手填/上次找到的密钥，避免误用旧 key 处理旧文件清单
+    state.key = ''
+    ;($('#keyInput') as HTMLInputElement).value = ''
     setButtonTooltip('#openBtn', dir)
     updateDecryptFab()
     setScanStatus('')
@@ -877,14 +952,22 @@ function bind(): void {
   $('#scanBtn').addEventListener('click', () => {
     if (state.scanning) void dsh.cancelScan()
     else if (state.processing || state.exporting) void dsh.cancelExport()
-    else if (state.dir) void startDecrypt(state.dir)
+    else if (state.dir) {
+      const typedKey = ($('#keyInput') as HTMLInputElement).value.trim()
+      // 扫描后手动改过密钥：直接用当前密钥重跑，不必重新扫描
+      if (state.files.length > 0 && typedKey && typedKey !== state.key) void runProcess(typedKey)
+      else void startDecrypt(state.dir)
+    }
   })
   $('#resetBtn').addEventListener('click', () => void resetDecrypt())
   $('#exportBtn').addEventListener('click', () => void runExport('files'))
   $('#exportZipBtn').addEventListener('click', () => void runExport('zip'))
-  const keyInput = $('#keyInput') as HTMLInputElement
-  keyInput.addEventListener('input', () => {
-    state.key = keyInput.value.trim()
+  // 手填密钥只影响「用当前密钥解密」的按钮文案，不直接改 state.key（state.key 是最近一次扫描/解密用的 key）
+  ;($('#keyInput') as HTMLInputElement).addEventListener('input', () => updateDecryptFab())
+  $('#openOutBtn').addEventListener('click', () => {
+    if (!state.exportPath) return
+    if (state.exportIsFile) void dsh.showItemInFolder(state.exportPath)
+    else void dsh.openPath(state.exportPath)
   })
 
   // ---- 加密 ----
@@ -997,6 +1080,10 @@ async function main(): Promise<void> {
   await initTheme()
   await refreshI18n()
   bindI18nHotReload()
+  // 初始空态提示（三个列表在未选择任何来源时给出各自引导文案）
+  await renderFileList()
+  await renderToolFileList(encUi)
+  await renderToolFileList(resUi)
   initTabs()
   bind()
 }

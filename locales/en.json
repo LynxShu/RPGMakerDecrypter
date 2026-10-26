@@ -29,7 +29,10 @@
     "statMagic": "Magic failed",
     "keyOk": "✓ Key verified",
     "keyBad": "✗ Key check failed (decrypted magic mismatch — verify the key)",
-    "magicFail": "{count} file(s) failed the magic-number check (wrong key?)"
+    "magicFail": "{count} file(s) failed the magic-number check (wrong key?)",
+    "emptyList": "No game folder selected yet",
+    "openOutput": "Open output folder",
+    "runWithKey": "Decrypt with current key"
   },
   "encrypt": {
     "pickFile": "Pick plaintext file",
@@ -39,7 +42,9 @@
     "start": "Start Encrypt",
     "key": "Encryption key (hex)",
     "fileList": "File list",
-    "openOutput": "Open output folder"
+    "openOutput": "Open output folder",
+    "emptyList": "Pick a plaintext file or folder",
+    "noFiles": "No files to encrypt (png / ogg / m4a)"
   },
   "restore": {
     "pickFile": "Pick encrypted image",
@@ -48,7 +53,9 @@
     "start": "Start Restore",
     "hint": "Images only (.rpgmvp / .png_) — other files will be skipped",
     "fileList": "File list",
-    "openOutput": "Open output folder"
+    "openOutput": "Open output folder",
+    "emptyList": "Pick an encrypted image or folder",
+    "noFiles": "No images to restore (rpgmvp / png_)"
   },
   "error": {
     "emptyFile": "File is empty or unreadable.",
@@ -69,7 +76,8 @@
     "latest": "Up to date",
     "available": "New version {version} available",
     "download": "Download",
-    "close": "Close"
+    "close": "Close",
+    "checkFailedDetail": "Update check failed: {error}"
   },
   "toolbar": {
     "locale": "Switch language",
@@ -82,9 +90,16 @@
     "failed": "{count} files failed",
     "skipped": "{count} files skipped",
     "cancelled": "Operation canceled",
-    "working": "Working…"
+    "working": "Working…",
+    "progress": "{pct}% ({done}/{total}) · OK {ok} · Failed {fail}",
+    "progressSkip": "{pct}% ({done}/{total}) · OK {ok} · Failed {fail} · Skipped {skip}",
+    "packingZip": "Packing ZIP… {pct}%",
+    "exported": "Exported {count} files",
+    "packed": "Packed {count} files into ZIP",
+    "savedTo": "Saved to {path}"
   },
   "tool": {
-    "found": "{count} processable file(s) found"
+    "found": "{count} processable file(s) found",
+    "more": "… {count} files in total"
   }
 }

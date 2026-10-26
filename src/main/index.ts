@@ -1,4 +1,4 @@
-import { app, shell, BrowserWindow, ipcMain, dialog, type IpcMainInvokeEvent } from 'electron'
+import { app, shell, BrowserWindow, ipcMain, dialog, Menu, type IpcMainInvokeEvent } from 'electron'
 import {
   copyFileSync,
   createReadStream,
@@ -400,7 +400,8 @@ function setupIpc(): void {
       return {
         ok: true as const,
         hasUpdate,
-        latest: latestTag.trim(),
+        // 对外统一不带 v 前缀（与界面顶栏 / package.json 版本格式一致）
+        latest: latestTag.trim().replace(/^v/i, ''),
         url: `https://github.com/LynxShu/RPGMakerDecrypter/releases`,
         current: app.getVersion()
       }
@@ -448,6 +449,12 @@ function setupIpc(): void {
     } catch {
       return false
     }
+  })
+
+  // 在系统文件管理器中定位文件/目录（导出 ZIP 后「打开输出目录」用）
+  ipcMain.handle('app:showItemInFolder', (_e, p: string) => {
+    if (typeof p !== 'string' || !p) return
+    shell.showItemInFolder(p)
   })
 
   // 列出目录下指定扩展名的文件（加密/图片还原批量用，跳过 node_modules/.git 等）
@@ -552,7 +559,7 @@ function setupIpc(): void {
     const dir = getDecryptCacheDir()
     const total = files.length
     const report = (done: number, _t: number, ok: number, fail: number, current?: string): void => {
-      event.sender.send('export:progress', { done, total, ok, fail, current })
+      event.sender.send('export:progress', { done, total, ok, fail, current, phase: 'process' })
     }
     const jobs: DecryptJob[] = files.map((f, i) => ({
       id: i,
@@ -587,7 +594,7 @@ function setupIpc(): void {
     exportController = controller
     const report = (done: number, total: number, ok: number, fail: number, current?: string): void => {
       if (event.sender.isDestroyed()) return
-      event.sender.send('export:progress', { done, total, ok, fail, current })
+      event.sender.send('export:progress', { done, total, ok, fail, current, phase: 'export' })
     }
     let ok = 0
     let fail = 0
@@ -623,7 +630,7 @@ function setupIpc(): void {
     const dir = decryptCacheDir
     if (!dir || !existsSync(dir)) return { canceled: false as const, ok: 0, fail: 0, magicFail: 0, outputDir: '' }
     const res = await dialog.showSaveDialog({
-      title: '导出 ZIP',
+      title: i18n.t('crypto.exportZip'),
       defaultPath: 'export.zip',
       filters: [{ name: 'ZIP', extensions: ['zip'] }]
     })
@@ -635,7 +642,7 @@ function setupIpc(): void {
     exportController = controller
     const report = (done: number, total: number, ok: number, current?: string): void => {
       if (event.sender.isDestroyed()) return
-      event.sender.send('export:progress', { done, total, ok, fail: 0, current })
+      event.sender.send('export:progress', { done, total, ok, fail: 0, current, phase: 'pack' })
     }
 
     try {
@@ -655,7 +662,7 @@ function setupIpc(): void {
         return { canceled: true, ok: 0, fail: 0, magicFail: 0, outputDir: outFile }
       }
 
-      report(0, total, 0, '打包 ZIP… 0%')
+      report(0, total, 0, i18n.t('task.packingZip', { pct: 0 }))
       let lastPct = -1
       const stream = zip.generateNodeStream(
         { streamFiles: true, compression: 'DEFLATE' },
@@ -664,7 +671,7 @@ function setupIpc(): void {
           if (pct === lastPct) return
           lastPct = pct
           const done = Math.round((pct / 100) * total)
-          report(done, total, done, `打包 ZIP… ${pct}%`)
+          report(done, total, done, i18n.t('task.packingZip', { pct }))
         }
       )
       // pipeline 把 ZIP 流式写盘；signal 中止时自动销毁两端流并抛 AbortError
@@ -822,6 +829,10 @@ async function bootstrap(): Promise<void> {
   // 启动时清掉上次残留的解密缓存目录（异步非阻塞，不挡住窗口显示；decryptCacheDir 在新进程里为空，
   // 直接删父目录下所有 decrypt-<uuid> 子目录即可清掉上一会话残留）
   void sweepStaleDecryptCache()
+
+  // 打包版移除默认 Electron 菜单（避免 Alt 唤出 Reload/DevTools 等菜单项）；
+  // 开发环境保留，方便调试。
+  if (app.isPackaged) Menu.setApplicationMenu(null)
 
   setupIpc()
   createWindow()

@@ -162,6 +162,8 @@ const api = {
     ipcRenderer.invoke('tool:restoreMany', files, outputDir),
   cancelTool: (): Promise<void> => ipcRenderer.invoke('task:cancelTool'),
   openPath: (p: string): Promise<boolean> => ipcRenderer.invoke('app:openPath', p),
+  /** 在系统文件管理器中显示文件/目录（用于导出完成后定位产物） */
+  showItemInFolder: (p: string): Promise<void> => ipcRenderer.invoke('app:showItemInFolder', p),
   onToolProgress: (cb: (payload: ToolProgressPayload) => void): (() => void) => {
     const listener = (_e: unknown, payload: ToolProgressPayload) => cb(payload)
     ipcRenderer.on('tool:progress', listener)
@@ -176,6 +178,13 @@ export interface ExportProgress {
   fail: number
   /** 当前正在处理的文件 relPath（或打包阶段提示），可选 */
   current?: string
+  /**
+   * 进度阶段：
+   * - process：解密到缓存
+   * - export：从缓存导出文件
+   * - pack：ZIP 打包（此时 ok/fail 无意义，界面只显示百分比与打包提示）
+   */
+  phase?: 'process' | 'export' | 'pack'
 }
 
 export type DshApi = typeof api

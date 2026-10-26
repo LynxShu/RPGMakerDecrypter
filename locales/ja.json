@@ -29,7 +29,10 @@
     "statMagic": "マジック不一致",
     "keyOk": "✓ キー検証OK",
     "keyBad": "✗ キー検証失敗（復号結果のマジック不一致 — キーを確認）",
-    "magicFail": "{count} 個のファイルでマジックナンバー検証が失敗（キーが違う？）"
+    "magicFail": "{count} 個のファイルでマジックナンバー検証が失敗（キーが違う？）",
+    "emptyList": "ゲームフォルダが未選択です",
+    "openOutput": "出力フォルダを開く",
+    "runWithKey": "現在のキーで復号"
   },
   "encrypt": {
     "pickFile": "平文ファイルを選択",
@@ -39,7 +42,9 @@
     "start": "暗号化開始",
     "key": "暗号化キー（hex）",
     "fileList": "ファイル一覧",
-    "openOutput": "出力フォルダを開く"
+    "openOutput": "出力フォルダを開く",
+    "emptyList": "平文ファイルまたはフォルダを選択",
+    "noFiles": "暗号化できるファイルが見つかりません（png / ogg / m4a）"
   },
   "restore": {
     "pickFile": "暗号化画像を選択",
@@ -48,7 +53,9 @@
     "start": "復元開始",
     "hint": "画像ファイルのみ（.rpgmvp / .png_）— その他はスキップされます",
     "fileList": "ファイル一覧",
-    "openOutput": "出力フォルダを開く"
+    "openOutput": "出力フォルダを開く",
+    "emptyList": "暗号化された画像またはフォルダを選択",
+    "noFiles": "復元できる画像が見つかりません（rpgmvp / png_）"
   },
   "error": {
     "emptyFile": "ファイルが空か読み取れません。",
@@ -69,7 +76,8 @@
     "latest": "最新版です",
     "available": "新バージョン {version} があります",
     "download": "ダウンロード",
-    "close": "閉じる"
+    "close": "閉じる",
+    "checkFailedDetail": "アップデート確認に失敗しました：{error}"
   },
   "toolbar": {
     "locale": "言語を切り替え",
@@ -82,9 +90,16 @@
     "failed": "{count} 個のファイルが失敗",
     "skipped": "{count} 個のファイルをスキップ",
     "cancelled": "操作はキャンセルされました",
-    "working": "処理中…"
+    "working": "処理中…",
+    "progress": "{pct}% ({done}/{total}) · 成功 {ok} · 失敗 {fail}",
+    "progressSkip": "{pct}% ({done}/{total}) · 成功 {ok} · 失敗 {fail} · スキップ {skip}",
+    "packingZip": "ZIP を作成中… {pct}%",
+    "exported": "{count} ファイルを書き出しました",
+    "packed": "{count} ファイルを ZIP にまとめました",
+    "savedTo": "保存先：{path}"
   },
   "tool": {
-    "found": "{count} 個の処理可能ファイルを検出"
+    "found": "{count} 個の処理可能ファイルを検出",
+    "more": "… 全 {count} ファイル"
   }
 }

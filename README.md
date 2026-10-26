@@ -31,7 +31,7 @@
 - **密钥反推**：从 `System.json`、`rpg_core.js` 或加密图片头反推密钥。
 - **批量与性能**：多线程解密，实时进度、可取消、单文件超时自动跳过；超大目录流式扫描、渐进渲染。
 - **导出**：解密结果可导出为文件目录或打包为 `ZIP`。
-- **多语言**：内置中文 / English / 日本語，支持**自定义语言包**。
+- **多语言**：内置简体中文 / 繁體中文 / English / 日本語，支持**自定义语言包**。
 - **主题**：明暗主题。
 - **命令行**：完整 CLI，便于批量自动化。
 
@@ -77,14 +77,14 @@ rpgmaker-decrypter decode-dir <dir> [-k key] [-o out] [--dry-run] [--jobs 8]
 1. **复制**：把 `_template.json` 复制一份，重命名为目标语言名称，如 `fr.json`、`de.json`。
    - 源码版：模版在项目根目录 `locales/_template.json`；
    - 打包版（绿色版）：模版默认在 `<程序目录>\rpgmaker-decrypter\locales\`；
-   - 若程序目录不可写（如放在 `C:\Program Files` 或只读磁盘），则回退到 `%APPDATA%\rpgmaker-decrypter\locales\`。
+   - 若程序目录不可写，则回退到 `%APPDATA%\rpgmaker-decrypter\locales\`。
 2. **改名**：文件开头的 `"__meta": { "name": "…" }` 改成语言名称（会显示在软件右上角语言下拉框中），如 `"Français"`。
 3. **翻译**：把每个 key 后面引号里的英文改成你的语言，保存即可。下拉框里马上出现新语言。
 
 > [!NOTE]
 > 模版含**全部**文案 key；可以只保留想要修改的键值，不存在的键值将会自动回退英文。
 
-## 💾 数据存放位置（便携模式）
+## 💾 数据存放位置
 
 Windows 打包版（绿色版）默认把应用数据保存在 `<程序目录>\rpgmaker-decrypter\`，整个文件夹可随程序一起放在 U 盘或移动硬盘中携带：
 
@@ -99,7 +99,6 @@ Windows 打包版（绿色版）默认把应用数据保存在 `<程序目录>\r
 - **首次便携启动**：若目标目录尚不存在，会把 `%APPDATA%\rpgmaker-decrypter` 中已有的 `config.json`、`history.json` 和 `locales\` 迁移过来，仅补齐缺失项，不覆盖已有文件。
 - **环境变量覆盖**：把环境变量 `RPGMD_DATA_DIR` 设为绝对路径可强制指定数据目录，在任何模式下都生效；开发模式未设置时使用系统默认目录。
 - **缓存**：便携模式下临时缓存位于数据目录的 `cache\`，其他情况位于 `%TEMP%\rpgmaker-decrypter`。
-- macOS / Linux 没有便携模式，始终使用系统默认目录。
 
 ## 🧪 开发与测试
 

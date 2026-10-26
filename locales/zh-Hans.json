@@ -29,7 +29,10 @@
     "statMagic": "魔数未通过",
     "keyOk": "✓ 密钥验证通过",
     "keyBad": "✗ 密钥验证失败（解密结果魔数不符，请检查密钥）",
-    "magicFail": "{count} 个文件魔数校验未通过（密钥可能不正确）"
+    "magicFail": "{count} 个文件魔数校验未通过（密钥可能不正确）",
+    "emptyList": "尚未选择游戏目录",
+    "openOutput": "打开输出目录",
+    "runWithKey": "用当前密钥解密"
   },
   "encrypt": {
     "pickFile": "选择明文文件",
@@ -39,7 +42,9 @@
     "start": "开始加密",
     "key": "加密密钥（hex）",
     "fileList": "文件清单",
-    "openOutput": "打开输出目录"
+    "openOutput": "打开输出目录",
+    "emptyList": "选择明文文件或目录",
+    "noFiles": "未找到可加密的文件（png / ogg / m4a）"
   },
   "restore": {
     "pickFile": "选择加密图片",
@@ -48,7 +53,9 @@
     "start": "开始还原",
     "hint": "仅处理图片文件（.rpgmvp / .png_），其它文件将跳过",
     "fileList": "文件清单",
-    "openOutput": "打开输出目录"
+    "openOutput": "打开输出目录",
+    "emptyList": "选择加密图片或目录",
+    "noFiles": "未找到可还原的图片（rpgmvp / png_）"
   },
   "error": {
     "emptyFile": "文件为空或无法读取。",
@@ -69,7 +76,8 @@
     "latest": "已是最新版本",
     "available": "发现新版本 {version}",
     "download": "前往下载",
-    "close": "关闭"
+    "close": "关闭",
+    "checkFailedDetail": "检查更新失败：{error}"
   },
   "toolbar": {
     "locale": "切换语言",
@@ -82,9 +90,16 @@
     "failed": "{count} 个文件失败",
     "skipped": "{count} 个文件已跳过",
     "cancelled": "操作已取消",
-    "working": "处理中…"
+    "working": "处理中…",
+    "progress": "{pct}% ({done}/{total}) · 成功 {ok} · 失败 {fail}",
+    "progressSkip": "{pct}% ({done}/{total}) · 成功 {ok} · 失败 {fail} · 跳过 {skip}",
+    "packingZip": "打包 ZIP… {pct}%",
+    "exported": "已导出 {count} 个文件",
+    "packed": "已打包 {count} 个文件",
+    "savedTo": "已保存到 {path}"
   },
   "tool": {
-    "found": "找到 {count} 个可处理文件"
+    "found": "找到 {count} 个可处理文件",
+    "more": "… 共 {count} 个文件"
   }
 }
