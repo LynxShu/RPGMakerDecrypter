@@ -1,0 +1,90 @@
+{
+  "__meta": { "name": "繁體中文", "direction": "ltr" },
+  "app": {
+    "title": "RPG Maker Decrypter",
+    "version": "版本 {version}"
+  },
+  "nav": {
+    "decrypt": "解密",
+    "encrypt": "加密",
+    "restore": "還原圖片"
+  },
+  "crypto": {
+    "key": "加密金鑰（十六進位）",
+    "keyPlaceholder": "加密金鑰（自動偵測，可手動編輯）",
+    "selectFolder": "選擇遊戲資料夾",
+    "startDecrypt": "開始解密",
+    "scanning": "掃描中…",
+    "found": "找到 {count} 個加密檔案",
+    "cancel": "取消",
+    "reset": "重設",
+    "preview": "預覽",
+    "export": "匯出檔案",
+    "exportZip": "匯出 ZIP",
+    "fileList": "檔案清單",
+    "statEncrypted": "加密檔案",
+    "statOk": "成功",
+    "statFail": "失敗",
+    "statSkip": "已略過",
+    "statMagic": "魔數未通過",
+    "keyOk": "✓ 金鑰驗證通過",
+    "keyBad": "✗ 金鑰驗證失敗（解密後的魔術數字不符，請確認金鑰是否正確）",
+    "magicFail": "有 {count} 個檔案未通過魔術數字檢查（金鑰可能有誤？）"
+  },
+  "encrypt": {
+    "pickFile": "選取明文檔案",
+    "pickDir": "選擇明文資料夾",
+    "outputDir": "輸出資料夾",
+    "version": "版本",
+    "start": "開始加密",
+    "key": "加密金鑰（十六進位）",
+    "fileList": "檔案清單",
+    "openOutput": "開啟輸出資料夾"
+  },
+  "restore": {
+    "pickFile": "選取已加密的圖片",
+    "pickDir": "選擇已加密的資料夾",
+    "outputDir": "輸出資料夾",
+    "start": "開始還原",
+    "hint": "僅支援圖片（.rpgmvp / .png_），其他檔案將被略過",
+    "fileList": "檔案清單",
+    "openOutput": "開啟輸出資料夾"
+  },
+  "error": {
+    "emptyFile": "檔案為空或無法讀取。",
+    "invalidFakeHeader": "偽標頭不符：這是加密檔案嗎？",
+    "noKey": "未提供加密金鑰。",
+    "noKeyInDir": "找不到加密金鑰，請使用 --key 指定。",
+    "noEncryptedFiles": "找不到加密檔案。",
+    "folderNotFound": "找不到資料夾。"
+  },
+  "theme": {
+    "label": "佈景主題",
+    "mode": { "light": "淺色", "dark": "深色", "system": "跟隨系統" }
+  },
+  "locale": { "label": "語言" },
+  "update": {
+    "checking": "正在檢查更新…",
+    "checkFailed": "檢查更新失敗",
+    "latest": "已是最新版本",
+    "available": "有新版本 {version} 可供下載",
+    "download": "下載",
+    "close": "關閉"
+  },
+  "toolbar": {
+    "locale": "切換語言",
+    "theme": "切換佈景主題",
+    "github": "GitHub 儲存庫",
+    "update": "檢查更新"
+  },
+  "task": {
+    "completed": "已處理 {count} 個檔案",
+    "failed": "{count} 個檔案處理失敗",
+    "skipped": "已略過 {count} 個檔案",
+    "cancelled": "操作已取消",
+    "working": "處理中…"
+  },
+  "tool": {
+    "found": "找到 {count} 個可處理的檔案"
+  }
+}

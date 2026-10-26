@@ -13,7 +13,7 @@ import {
 import { pipeline } from 'node:stream/promises'
 import { basename, dirname, join, sep } from 'node:path'
 import { randomUUID } from 'node:crypto'
-import { createI18n } from '@lib/i18n'
+import { createI18n, detectLocale } from '@lib/i18n'
 import { Decrypter, detectMagicKind, encryptExtFor, RESTORE_IMAGE_EXTENSIONS } from '@lib/crypto'
 import JSZip from 'jszip'
 import { scanLocaleDirs } from './i18nLoader'
@@ -750,6 +750,24 @@ function createWindow(): BrowserWindow {
   return win
 }
 
+/** 读取系统语言偏好（有序候选）：首选语言列表优先，再补一个系统 locale。 */
+function systemLanguageTags(): string[] {
+  const tags: string[] = []
+  try {
+    const preferred = app.getPreferredSystemLanguages?.()
+    if (Array.isArray(preferred)) tags.push(...preferred)
+  } catch {
+    /* 平台/版本不支持时忽略 */
+  }
+  try {
+    const systemLocale = app.getSystemLocale?.()
+    if (typeof systemLocale === 'string' && systemLocale) tags.push(systemLocale)
+  } catch {
+    /* ignore */
+  }
+  return tags
+}
+
 async function bootstrap(): Promise<void> {
   // 语言包目录：内置（asar / 项目 locales）+ 用户自定义（userData/locales，后加载可覆盖同名 code）。
   // 打包后内置在只读 asar 里，用户自定义目录才是「丢一个 json 即多一种语言」的可写入口。
@@ -772,11 +790,28 @@ async function bootstrap(): Promise<void> {
   // 应用偏好：恢复上次语言 / 主题（蓝图 §11.1「选择写入 config」）
   // 注：必须在语言包加载之后恢复，否则 hasLocale 恒为 false
   const saved = config.get()
-  if (saved.locale && i18n.hasLocale(saved.locale)) {
+  const envLocale = process.env.RPGMD_LOCALE?.trim()
+  if (envLocale && i18n.hasLocale(envLocale)) {
+    // 测试/调试用覆盖：只影响本次运行，不写入 config
+    i18n.setLocale(envLocale)
+  } else if (saved.locale && i18n.hasLocale(saved.locale)) {
     i18n.setLocale(saved.locale)
-  } else if (saved.locale) {
-    // 语言包已被热删除：回退默认并清掉失效偏好
-    config.set({ locale: undefined })
+  } else {
+    // 「首次启动」没有额外标志位：config 里没有 locale（或保存的语言包已失效）即视为首次。
+    // 检测一次系统语言并固化到 config；之后一律尊重用户的手动选择，不再覆盖。
+    const systemTags = systemLanguageTags()
+    const available = i18n.getAvailableLocales().map((l) => l.code)
+    const detected = detectLocale(systemTags, available, { fallback: 'en' })
+    if (detected) {
+      i18n.setLocale(detected)
+      config.set({ locale: detected })
+      console.log(
+        `[i18n] 首次启动语言检测：${detected}（系统偏好：${systemTags.join(', ') || '未知'}）`
+      )
+    } else if (saved.locale) {
+      // 语言包已被热删除且无法检测：清掉失效偏好，保持默认语言
+      config.set({ locale: undefined })
+    }
   }
 
   // 热监视内置 + 用户语言包目录：放入/修改/删除 → 立即生效并广播给渲染层（蓝图 §11.1）

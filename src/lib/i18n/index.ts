@@ -2,6 +2,7 @@ import { flattenMessages, I18nStore, type LocaleBundle } from './core'
 import { diffLocaleSets, type LocaleChangeSet } from './diff'
 
 export * from './core'
+export * from './detect'
 export * from './diff'
 
 export interface CreateI18nOptions {
