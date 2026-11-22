@@ -15,6 +15,7 @@
   "include": [
     "src/cli",
     "src/main/project.ts",
+    "src/main/projectExport.ts",
     "src/main/decryptCore.ts",
     "src/main/decryptPool.ts"
   ]

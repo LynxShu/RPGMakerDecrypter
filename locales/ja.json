@@ -20,6 +20,8 @@
     "reset": "リセット",
     "preview": "プレビュー",
     "export": "ファイルを書き出し",
+    "exportProject": "プロジェクト書き出し",
+    "exportProjectNeedGame": "data/System.json を含むゲームフォルダが必要です",
     "exportZip": "ZIP 書き出し",
     "fileList": "ファイル一覧",
     "statEncrypted": "暗号化ファイル",
@@ -63,7 +65,8 @@
     "noKey": "暗号化キーが指定されていません。",
     "noKeyInDir": "暗号化キーが見つかりません。--key で指定してください。",
     "noEncryptedFiles": "暗号化ファイルが見つかりません。",
-    "folderNotFound": "フォルダが見つかりません。"
+    "folderNotFound": "フォルダが見つかりません。",
+    "notRpgProject": "有効な RPG Maker MV/MZ ゲームフォルダが見つかりません（data/System.json がありません）。"
   },
   "theme": {
     "label": "テーマ",
@@ -95,6 +98,7 @@
     "progressSkip": "{pct}% ({done}/{total}) · 成功 {ok} · 失敗 {fail} · スキップ {skip}",
     "packingZip": "ZIP を作成中… {pct}%",
     "exported": "{count} ファイルを書き出しました",
+    "exportedProject": "プロジェクトを書き出しました（{count} ファイル）",
     "packed": "{count} ファイルを ZIP にまとめました",
     "savedTo": "保存先：{path}"
   },

@@ -19,6 +19,7 @@ import JSZip from 'jszip'
 import { scanLocaleDirs } from './i18nLoader'
 import { watchLocalesDir } from './i18nWatcher'
 import { findEncryptionKey, listFilesByExt, streamEncryptedFiles } from './project'
+import { detectRpgProject, exportEditableProject, makeProjectDirName } from './projectExport'
 import { runDecryptJobs } from './decryptPool'
 import { targetRelPath, type DecryptJob } from './decryptCore'
 import { createHistoryStore } from './historyStore'
@@ -480,9 +481,12 @@ function setupIpc(): void {
     scanController = controller
     const jid = jobId || randomUUID()
     const sender = event.sender
-    // 后台并行计算密钥（System.json / rpg_core.js / 加密头反推）
+    // 后台并行计算密钥（System.json / rpg_core.js / 加密头反推）与探测工程结构
     const keyPromise = Promise.resolve()
       .then(() => findEncryptionKey(dir))
+      .catch(() => null)
+    const projectPromise = Promise.resolve()
+      .then(() => detectRpgProject(dir))
       .catch(() => null)
 
     void (async () => {
@@ -503,6 +507,7 @@ function setupIpc(): void {
       }
       if (sender.isDestroyed()) return
       const key = controller.signal.aborted ? null : await keyPromise
+      const detectedProject = controller.signal.aborted ? null : await projectPromise
       // key 预检：解密第一个加密文件，魔数通过则 key 大概率正确（不用等导出才知道）
       let keyOk: boolean | null = null
       if (!controller.signal.aborted && key?.key && samplePath) {
@@ -529,6 +534,13 @@ function setupIpc(): void {
         key: key?.key ?? null,
         keySource: key?.source ?? null,
         keyOk,
+        project: detectedProject
+          ? {
+              engine: detectedProject.engine,
+              engineVersion: detectedProject.engineVersion,
+              baseName: detectedProject.baseName
+            }
+          : null,
         canceled: controller.signal.aborted
       })
     })()
@@ -689,6 +701,62 @@ function setupIpc(): void {
       // 打包/写盘失败（磁盘满、流错误等）：删除残留文件
       try { rmSync(outFile, { force: true }) } catch { /* 忽略 */ }
       return { canceled: false, ok: 0, fail: 0, magicFail: 0, outputDir: outFile }
+    } finally {
+      if (exportController === controller) exportController = null
+    }
+  })
+
+  // 导出为可直接用 RPG Maker MV/MZ 编辑器打开的工程目录（在所选目录下自动创建 <原目录名>_project）
+  ipcMain.handle('decode:exportProject', async (event, gameDir: string) => {
+    const info = detectRpgProject(gameDir)
+    if (!info) {
+      return {
+        canceled: false as const,
+        ok: 0,
+        fail: 0,
+        magicFail: 0,
+        outputDir: '',
+        error: i18n.t('error.notRpgProject')
+      }
+    }
+    const res = await dialog.showOpenDialog({ properties: ['openDirectory', 'createDirectory'] })
+    if (res.canceled) {
+      return { canceled: true as const, ok: 0, fail: 0, magicFail: 0, outputDir: '' }
+    }
+    const outputDir = join(res.filePaths[0], makeProjectDirName(info.baseName))
+
+    exportController?.abort()
+    const controller = new AbortController()
+    exportController = controller
+    const report = (done: number, total: number, ok: number, fail: number, current?: string): void => {
+      if (event.sender.isDestroyed()) return
+      event.sender.send('export:progress', { done, total, ok, fail, current, phase: 'project' })
+    }
+
+    try {
+      const result = await exportEditableProject({
+        gameDir,
+        outputDir,
+        decryptCacheDir: decryptCacheDir && existsSync(decryptCacheDir) ? decryptCacheDir : null,
+        signal: controller.signal,
+        onProgress: report
+      })
+      return {
+        canceled: result.canceled,
+        ok: result.ok,
+        fail: result.fail,
+        magicFail: 0,
+        outputDir: result.outputDir
+      }
+    } catch (e) {
+      return {
+        canceled: controller.signal.aborted,
+        ok: 0,
+        fail: 0,
+        magicFail: 0,
+        outputDir: '',
+        error: e instanceof Error ? e.message : String(e)
+      }
     } finally {
       if (exportController === controller) exportController = null
     }

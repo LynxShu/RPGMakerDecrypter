@@ -26,6 +26,12 @@ export interface ScanBatchPayload {
   done: boolean
 }
 
+export interface DetectedProjectInfo {
+  engine: 'mv' | 'mz'
+  engineVersion: string | null
+  baseName: string
+}
+
 export interface ScanDonePayload {
   jobId: string
   found: number
@@ -33,6 +39,8 @@ export interface ScanDonePayload {
   keySource: string | null
   /** key 预检结果：解密第一个加密文件后魔数是否通过（null=未验证，如无 key/无文件） */
   keyOk?: boolean | null
+  /** 若目录包含完整 MV/MZ 工程结构则返回探测信息，否则为 null */
+  project?: DetectedProjectInfo | null
   canceled: boolean
 }
 
@@ -45,6 +53,8 @@ export interface ExportResult {
   /** 解密成功但魔数与期望类型不符的文件数（大概率 key 错误） */
   magicFail?: number
   outputDir?: string
+  /** 导出失败时的错误说明（如目录校验失败） */
+  error?: string
 }
 
 export interface I18nChangedPayload {
@@ -117,6 +127,8 @@ const api = {
     ipcRenderer.invoke('decode:process', files, key),
   /** 把缓存里的解密结果拷到用户选择的目录 */
   exportFiles: (): Promise<ExportResult> => ipcRenderer.invoke('decode:exportFiles'),
+  /** 导出为可直接用 RPG Maker MV/MZ 编辑器打开的工程目录（在目标目录下创建 <name>_project） */
+  exportProject: (gameDir: string): Promise<ExportResult> => ipcRenderer.invoke('decode:exportProject', gameDir),
   /** 把缓存里的解密结果打包成 ZIP */
   exportZip: (): Promise<ExportResult> => ipcRenderer.invoke('decode:exportZip'),
   /** 重置：清空解密缓存 */
@@ -182,9 +194,10 @@ export interface ExportProgress {
    * 进度阶段：
    * - process：解密到缓存
    * - export：从缓存导出文件
+   * - project：导出可编辑工程（不覆盖加密文件统计计数）
    * - pack：ZIP 打包（此时 ok/fail 无意义，界面只显示百分比与打包提示）
    */
-  phase?: 'process' | 'export' | 'pack'
+  phase?: 'process' | 'export' | 'project' | 'pack'
 }
 
 export type DshApi = typeof api

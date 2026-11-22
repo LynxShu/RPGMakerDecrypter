@@ -20,6 +20,8 @@
     "reset": "重置",
     "preview": "预览",
     "export": "导出文件",
+    "exportProject": "导出工程",
+    "exportProjectNeedGame": "需选择包含 data/System.json 的完整游戏目录",
     "exportZip": "导出 ZIP",
     "fileList": "文件清单",
     "statEncrypted": "加密文件",
@@ -63,7 +65,8 @@
     "noKey": "未提供加密密钥。",
     "noKeyInDir": "未找到加密密钥，请用 --key 指定。",
     "noEncryptedFiles": "未发现加密文件。",
-    "folderNotFound": "未找到该目录。"
+    "folderNotFound": "未找到该目录。",
+    "notRpgProject": "未检测到完整的 RPG Maker MV/MZ 游戏目录（缺少 data/System.json）。"
   },
   "theme": {
     "label": "主题",
@@ -95,6 +98,7 @@
     "progressSkip": "{pct}% ({done}/{total}) · 成功 {ok} · 失败 {fail} · 跳过 {skip}",
     "packingZip": "打包 ZIP… {pct}%",
     "exported": "已导出 {count} 个文件",
+    "exportedProject": "已导出工程（{count} 个文件）",
     "packed": "已打包 {count} 个文件",
     "savedTo": "已保存到 {path}"
   },

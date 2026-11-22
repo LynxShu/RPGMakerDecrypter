@@ -497,10 +497,11 @@ input::placeholder { color: var(--text-3); }
   text-align: center;
 }
 
-/* 导出（居中） */
+/* 导出（居中，窄窗自动换行） */
 .export-row {
   display: flex;
   justify-content: center;
+  flex-wrap: wrap;
   gap: var(--space-3);
 }
 .tool-card .actions { justify-content: center; }

@@ -1,131 +1,134 @@
 <div align="center">
 
-<p><img src="./assets/index_jp.png"></p>
+<p><img src="./assets/index_jp.png" alt="RPG Maker Decrypter"></p>
 
 <p>
 <a href="https://github.com/LynxShu/RPGMakerDecrypter/releases"><img src="https://img.shields.io/github/downloads/LynxShu/RPGMakerDecrypter/total?style=flat&label=Downloads&color=8250df" alt="Downloads"></a>&nbsp;
 <a href="https://github.com/LynxShu/RPGMakerDecrypter/releases"><img src="https://img.shields.io/github/v/release/LynxShu/RPGMakerDecrypter?style=flat&label=Release&color=2EA44F" alt="Release"></a>&nbsp;
 <a href="https://github.com/LynxShu/RPGMakerDecrypter/releases"><img src="https://img.shields.io/badge/Windows-10%2F11-4493F8?style=flat" alt="Windows"></a>&nbsp;
+<a href="./skills/rpgmaker-decrypter/SKILL.md"><img src="https://img.shields.io/badge/AI%20Skill-SKILL.md-F97316?style=flat" alt="AI Skill"></a>&nbsp;
 <a href="https://github.com/LynxShu/RPGMakerDecrypter/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-57606a?style=flat" alt="MIT License"></a>
 </p>
 
-<h3><p><a href="README.md">简体中文</a> &nbsp; / &nbsp; <a href="README_en.md">English</a> &nbsp; / &nbsp; 日本語</p></h3>
+<h3><a href="README.md">简体中文</a> &nbsp; / &nbsp; <a href="README_en.md">English</a> &nbsp; / &nbsp; 日本語</h3>
 
-**RPG Maker MV / MZ** ゲームリソースの復号・暗号化ツール
+**RPG Maker MV / MZ** リソース復号・暗号化・キーなし画像復元・プロジェクト復元ツール
 
 </div>
 
-
-## 📖 1. プロジェクト概要
-
-- 本ツールは、RPG Maker MV / MZ ゲームのリソースを復号・再暗号化します。自分で失ったプロジェクトファイルの復元、許可を得た改造（Modding）、学習・研究を目的としています。
-- さらなる機能と使い勝手の改善を継続して行っています…
-
-> [!TIP]
-> 旧 Python 版のプログラムソースはアーカイブ済みです。ご利用の場合は [Original Build](https://github.com/LynxShu/RPGMakerDecrypter/releases/tag/v0.1-beta.1) をダウンロードしてください。
-
-## ✨ 2. 機能
-
-- **復号 / 暗号化**：MV の `.rpgmvp / .rpgmvo / .rpgmvm` と MZ の `.png_ / .ogg_ / .m4a_` リソースファイル。
-- **画像復元**：暗号化キーがなくても PNG ファイルヘッダーを再構築して画像を復元できます。
-- **キー推測**：`System.json`、`rpg_core.js`、または暗号化画像ヘッダーからキーを推測します。
-- **一括処理と性能**：マルチスレッド復号、リアルタイム進捗、キャンセル可能、ファイルごとのタイムアウトで自動スキップ。超大容量ディレクトリはストリーミングスキャンと段階的レンダリングに対応。
-- **エクスポート**：復号結果をフォルダーに書き出すか、`ZIP` に圧縮できます。
-- **多言語**：簡体字中国語 / 繁体字中国語 / 英語 / 日本語を内蔵し、**カスタム言語パック**に対応。
-- **テーマ**：ライト / ダークテーマ。
-- **コマンドライン**：バッチ自動化に便利な完全な CLI。
-
-## ⚡ 3. クイックスタート
-
-1. **ダウンロード**：[GitHub Releases](https://github.com/LynxShu/RPGMakerDecrypter/releases) を開き、圧縮ファイルをダウンロードします。
-2. **解凍**：任意のフォルダーに解凍します（`C:\Program Files` など管理者権限が必要な場所は避けてください）。
-3. **実行**：解凍したフォルダー内の `RPGMakerDecrypter.exe` をダブルクリックして起動します。
-
-## 🚀 4. 使い方
-
-### 1️⃣ リソースの復号
-
-1. ゲームフォルダーを選択し「復号を開始」をクリック — 暗号化ファイルのスキャン、キーの検出、キー事前チェックを自動で行います。
-2. 統計を確認後、「ファイルをエクスポート」（フォルダーへコピー）または「ZIP をエクスポート」（圧縮）を選択します。
-3. 「リセット」で今回のキャッシュをクリアします。
-
-### 2️⃣ 暗号化 / キーなし画像復元
-
-対応するタブに切り替え、ファイル/フォルダーと出力先フォルダーを選択し、単体/一括処理を行います。
-
-### 3️⃣ コマンドライン（CLI）
-
-```bash
-# リソース
-rpgmaker-decrypter decrypt <file> -k <key> [-o out] [--json]
-rpgmaker-decrypter encrypt <file> -k <key> [-o out]
-rpgmaker-decrypter restore <file> [-o out]                        # キーなし画像復元
-rpgmaker-decrypter detect-key <dir>                               # キーを自動検出
-rpgmaker-decrypter decode-dir <dir> [-k key] [-o out] [--dry-run] [--jobs 8]
-```
-
-共通オプション：`--json`（機械可読出力）、`--verbose`（詳細情報）、`--lang <code>`（UI 言語。見つからない場合は英語にフォールバック）。
-
-開発環境では `rpgmaker-decrypter` の代わりに `npm run cli -- <args>` を使用できます。
-
-## 🌐 5. カスタム言語パック
-
-言語パックは JSON ファイルです。プロジェクトには完全なテンプレートが付属しており、編集すると**即時に反映され、アプリの再起動は不要**です。
-
-### 言語の追加
-
-1. **コピー**：`_template.json` をコピーし、対象の言語名にリネームします（例：`fr.json`、`de.json`）。
-   - ソース版：テンプレートはプロジェクトルートの `locales/_template.json` にあります。
-   - パッケージ版（ポータブル版）：テンプレートは `<プログラムフォルダー>\rpgmaker-decrypter\locales\` にあります。
-   - プログラムフォルダーに書き込めない場合は、`%APPDATA%\rpgmaker-decrypter\locales\` にフォールバックします。
-2. **名前変更**：ファイル先頭の `"__meta": { "name": "…" }` を言語名に変更します（右上の言語ドロップダウンに表示されます）。例：`"Français"`。
-3. **翻訳**：各キーの後の引用符内の英文を自分の言語に置き換えて保存します。ドロップダウンにすぐに新しい言語が表示されます。
-
 > [!NOTE]
-> テンプレートには**すべて**のメッセージキーが含まれています。変更したいキーだけを残しても構いません。存在しないキーは自動的に英語へフォールバックします。
+> `v1.0.3` は本プロジェクトの機能完結版（最終リリース）です。今後はメンテナンスモードに移行し、原則として新規機能の追加は行いません。
+> 旧 Python 版ソースはアーカイブ済みです。必要な場合は [Original Build (v0.1-beta.1)](https://github.com/LynxShu/RPGMakerDecrypter/releases/tag/v0.1-beta.1) をご利用ください。
 
-## 💾 データの保存場所
+---
 
-Windows のパッケージ版（ポータブル版）は、アプリのデータを `<プログラムフォルダー>\rpgmaker-decrypter\` に保存します。フォルダーごと USB メモリや外付けドライブに持ち運べます：
+## ✨ 機能一覧
 
-| パス | 内容 |
+| 機能 | 内容 |
 | --- | --- |
-| `config.json` | UI 言語・テーマなどの設定 |
-| `history.json` | 最近のプロジェクトとキーの履歴 |
-| `locales\` | カスタム言語パック（前のセクションを参照） |
-| `cache\` | 復号の一時キャッシュ。終了時 / 起動時に自動でクリーンアップ |
+| **リソース復号 / 暗号化** | MV（`.rpgmvp / .rpgmvo / .rpgmvm`）および MZ（`.png_ / .ogg_ / .m4a_`）の画像・音声リソースに対応 |
+| **プロジェクト書き出し** | MV / MZ 配布版からエディターで直接開ける `<フォルダ名>_project` を復元（NW.js ランタイム除外・`System.json` 暗号化フラグ解除・`.rpgproject` / `.rmmzproject` 自動生成・プラグイン独自フォルダ保持・元フォルダ非変更） |
+| **キーなし画像復元** | 暗号化キーがなくても標準 PNG ヘッダーを再構築して暗号化画像を復元 |
+| **キー自動検出** | `System.json` → `rpg_core.js` → 暗号化 PNG ヘッダー逆算の優先順で自動検出し、復号結果をマジックナンバーで検証 |
+| **高速バッチ処理** | マルチスレッド復号、リアルタイム進捗、即時キャンセル、ファイル単位タイムアウト、大容量フォルダのストリーミングスキャンと仮想リスト描画 |
+| **柔軟な書き出し** | フォルダへのファイル書き出し、`ZIP` 圧縮、編集可能プロジェクトとしての復元に対応 |
+| **多言語 & テーマ** | 簡体字中国語 / 繁體中文 / English / 日本語を内蔵（初回起動時にシステム言語を自動判定）、カスタム言語パックのホットリロード・ライト/ダークテーマ対応 |
+| **CLI & AI Skill** | 本格的なコマンドラインツールに加え、AI エージェント向けの [AI Skill](skills/rpgmaker-decrypter/SKILL.md) を同梱 |
 
-- **フォールバック**：プログラムフォルダーに書き込めない場合（`C:\Program Files` や読み取り専用ドライブなど）は、代わりにシステム既定の `%APPDATA%\rpgmaker-decrypter\` を使用します。
-- **初回のポータブル起動時**：対象フォルダーが存在しなかった場合、`%APPDATA%\rpgmaker-decrypter` にある既存の `config.json`、`history.json`、`locales\` を移行します。不足している項目のみを補い、既存のファイルは上書きしません。
-- **環境変数による上書き**：絶対パスの環境変数 `RPGMD_DATA_DIR` を設定すると、どのモードでもデータディレクトリを強制的に指定できます。開発モードで未設定の場合はシステム既定のディレクトリを使用します。
-- **キャッシュ**：ポータブルモードではデータフォルダーの `cache\`、それ以外では `%TEMP%\rpgmaker-decrypter` に置かれます。
+---
 
-## 🧪 開発とテスト
+## ⚡ 使用方法
+
+### 1. デスクトップ版（推奨・Windows ポータブル版）
+
+1. [GitHub Releases](https://github.com/LynxShu/RPGMakerDecrypter/releases) から最新の ZIP アーカイブをダウンロードします。
+2. 書き込み可能な任意のフォルダへ解凍します（`C:\Program Files` など管理者権限が必要な場所は避けてください）。
+3. `RPGMakerDecrypter.exe` をダブルクリックして起動します。
+
+**基本操作**
+- **復号 / プロジェクト書き出し**：ゲームフォルダを選択 →「復号開始」（自動スキャン・キー検出・キャッシュへ復号）→ 用途に応じて「ファイルを書き出し」「プロジェクト書き出し」「ZIP 書き出し」を実行 → 完了後は「出力フォルダを開く」から直接確認できます。「リセット」でキャッシュを消去します。
+  > 暗号化されていない完全な MV / MZ ゲームも、スキャン後にそのまま「プロジェクト書き出し」を実行できます。
+- **暗号化 / 画像復元**：該当タブに切り替え、ファイルまたはフォルダと出力先を指定して一括処理します。
+
+### 2. コマンドライン（CLI）
+
+一括自動化やスクリプト連携に適しています（開発環境では `npm run cli -- <コマンド>`、ビルド後は `node out/main/cli.js <コマンド>` を使用）：
 
 ```bash
+# ゲームフォルダから暗号化キーを自動検出
+rpgmaker-decrypter detect-key <dir>
+
+# ゲームフォルダ全体を一括復号（キー自動検出・ディレクトリ構造保持）
+rpgmaker-decrypter decode-dir <dir> [-k <key>] [-o <out>] [--dry-run] [--jobs 8] [--json]
+
+# MV/MZ 配布版を編集可能なプロジェクトに復元（既定では同階層の <フォルダ名>_project に出力）
+rpgmaker-decrypter export-project <dir> [-k <key>] [-o <out>] [--dry-run] [--jobs 8] [--json]
+
+# 単一ファイルの復号 / 暗号化 / キーなし画像復元
+rpgmaker-decrypter decrypt <file> -k <key> [-o <out>] [--ignore-fake-header] [--json]
+rpgmaker-decrypter encrypt <file> -k <key> [-f mv|mz] [-o <out>] [--json]
+rpgmaker-decrypter restore <file> [-o <out>] [--json]
+```
+
+共通オプション：`--json`（JSON 出力、サブコマンドの前後どちらでも指定可能）、`--verbose`（詳細ログ）、`--lang <code>`（表示言語、未検出時は英語にフォールバック）。
+
+### 3. AI アシスタントと連携（AI Skill）
+
+Claude Code、Codex、Cursor、Antigravity などの AI コーディングエージェントから直接処理したい場合、本リポジトリ同梱の Skill をそのまま利用できます：
+
+- パス：[`skills/rpgmaker-decrypter/SKILL.md`](skills/rpgmaker-decrypter/SKILL.md)
+
+この Skill には RPG Maker MV / MZ の疑似ヘッダー仕様、XOR ルール、キー逆算、PNG ヘッダー復元、プロジェクト復元の手順と標準ライブラリのみの Python リファレンス実装が含まれており、AI が原理に基づいて直接スクリプトを実行したり、本リポジトリの CLI を呼び出して処理できます。
+
+---
+
+## 🌐 カスタム言語パック
+
+言語パックは標準 JSON ファイルで、編集すると**アプリを再起動せず即座に反映**されます。
+
+1. テンプレート `_template.json` を開きます：
+   - ポータブル版：`<実行フォルダ>\rpgmaker-decrypter\locales\_template.json`（書き込み不可の場合は `%APPDATA%\rpgmaker-decrypter\locales\`）
+   - ソース版：`locales/_template.json`
+2. コピーして言語コード名にリネームします（例：`fr.json`、`ko.json`）。
+3. 先頭の `"__meta": { "name": "…" }` にメニュー表示名を設定し、必要な項目を翻訳して保存します。未翻訳のキーは自動的に英語へフォールバックされます。
+
+---
+
+## 💾 データ保存場所
+
+Windows ポータブル版では設定やキャッシュが `<実行フォルダ>\rpgmaker-decrypter\` にまとめて保存され、USB メモリ等でそのまま持ち運べます：
+
+| パス | 用途 |
+| --- | --- |
+| `config.json` | 言語・テーマなどの設定 |
+| `history.json` | 最近のプロジェクトとキー履歴 |
+| `locales\` | カスタム言語パック |
+| `cache\` | 復号用一時キャッシュ（終了時・次回起動時に自動削除） |
+
+- **自動フォールバック**：`Program Files` などの読み取り専用フォルダに置かれた場合、自動的に `%APPDATA%\rpgmaker-decrypter\` へ切り替わります（キャッシュは `%TEMP%\rpgmaker-decrypter`）。
+- **環境変数による上書き**：環境変数 `RPGMD_DATA_DIR` に絶対パスを設定すると、すべてのモードでデータ保存先を固定できます。
+
+---
+
+## 🧪 開発・ビルド
+
+動作環境：Node.js ≥ 20（22 推奨）、npm ≥ 10。
+
+```bash
+npm install          # 依存関係をインストール
+npm run dev          # 開発モード（ホットリロード）
 npm run typecheck    # TypeScript 型チェック
-npm test             # vitest ユニットテスト
-node scripts/verify.cjs               # コア自己チェック（先に tsc -p tsconfig.build-lib.json を実行）
-node scripts/regression.cjs           # 合成サンプルでのエンドツーエンド
-node scripts/verify-cli.cjs           # CLI 自動化（先に prepare-cli-test.cjs を実行）
-node scripts/verify-watch.cjs         # ホットリロード / 設定保存のリグレッション
+npm test             # Vitest ユニットテスト
+npm run cli:test     # CLI 自動検証
+npm run build        # アプリと CLI を out/ へビルド
+npm run package:dir  # Windows ポータブル版を release/win-unpacked/ へ生成
 ```
 
-### 必要環境と実行
-- Node.js ≥ 20（22 推奨）
-- npm ≥ 10
-
-```bash
-npm install          # 依存関係のインストール
-npm run dev          # 開発実行（ホットリロード）
-npm run build        # out/ にビルド
-npm run package:dir  # ポータブルフォルダー release/win-unpacked/ を生成（.exe を含む）
-npm run package      # インストーラー（NSIS）を生成
-```
+---
 
 ## 🤝 謝辞
 
-本プロジェクトは設計・実装において以下のオープンソースプロジェクトを参考にしています：
+本プロジェクトの設計・実装にあたり、以下のオープンソースプロジェクトを参考にしました：
 
 - [Petschko/RPG-Maker-MV-Decrypter](https://github.com/Petschko/RPG-Maker-MV-Decrypter)
 - [pieroxy/lz-string](https://github.com/pieroxy/lz-string)
@@ -135,15 +138,17 @@ npm run package      # インストーラー（NSIS）を生成
 - [Petschko/Java-RPG-Maker-MV-Decrypter](https://github.com/Petschko/Java-RPG-Maker-MV-Decrypter)
 - [omega-slender/NimRpgMakerDecrypt](https://github.com/omega-slender/NimRpgMakerDecrypt)
 
+---
+
 ## ⚖️ 免責事項
 
 > [!WARNING]
-> **本ツールは学習・研究、ファイル復元、許可を得た改造（Modding）のみを目的としています。**
+> **本ツールは、自身が失ったプロジェクトの復元、学習・研究、および許可を得たローカライズ・改造（Modding）のみを目的としています。**
 
-- 本ツールを使用してリソースを盗用したり、ゲーム開発者の知的財産権を侵害したりしないでください。
-- 対象のソフトウェアやゲームの著作権および利用規約を尊重してください。
-- 本ソフトウェアの使用によって生じた悪用や法的結果について、作者は一切の責任を負いません。
+- ゲーム開発者の知的財産権を侵害する行為やリソースの不正取得には使用しないでください。
+- 対象となるソフトウェア・ゲームの著作権および利用規約を尊重してください。
+- 本ソフトウェアの不適切な使用によって生じたいかなる法的責任・損害についても、作者は一切責任を負いません。
 
 ## 📜 ライセンス
 
-本プロジェクトは **MIT** ライセンスで提供されています。
+本プロジェクトは **MIT** ライセンスの下で公開されています。詳細は [LICENSE](LICENSE) をご覧ください。

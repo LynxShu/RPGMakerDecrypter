@@ -20,6 +20,8 @@
     "reset": "重設",
     "preview": "預覽",
     "export": "匯出檔案",
+    "exportProject": "匯出專案",
+    "exportProjectNeedGame": "需選擇包含 data/System.json 的完整遊戲資料夾",
     "exportZip": "匯出 ZIP",
     "fileList": "檔案清單",
     "statEncrypted": "加密檔案",
@@ -63,7 +65,8 @@
     "noKey": "未提供加密金鑰。",
     "noKeyInDir": "找不到加密金鑰，請使用 --key 指定。",
     "noEncryptedFiles": "找不到加密檔案。",
-    "folderNotFound": "找不到資料夾。"
+    "folderNotFound": "找不到資料夾。",
+    "notRpgProject": "未偵測到完整的 RPG Maker MV/MZ 遊戲資料夾（缺少 data/System.json）。"
   },
   "theme": {
     "label": "佈景主題",
@@ -95,6 +98,7 @@
     "progressSkip": "{pct}% ({done}/{total}) · 成功 {ok} · 失敗 {fail} · 略過 {skip}",
     "packingZip": "封裝 ZIP… {pct}%",
     "exported": "已匯出 {count} 個檔案",
+    "exportedProject": "已匯出專案（{count} 個檔案）",
     "packed": "已封裝 {count} 個檔案為 ZIP",
     "savedTo": "已儲存至 {path}"
   },

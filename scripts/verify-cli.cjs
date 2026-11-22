@@ -97,19 +97,28 @@ async function main() {
     assert.equal(r.code, 1)
     assert.match(r.err, /No encryption key|未找到加密密钥/) // 回退 en 或原 key
   })
-  await ok('decrypt/encrypt 往返', async () => {
+  await ok('decrypt/encrypt 往返 + 后置 --json 绝对路径输出正确', async () => {
     const enc = path.join(TMP, 'enc.png_')
-    const dec = path.join(TMP, 'dec.png')
+    const dec = path.join(TMP, 'nested', 'dec.png')
     // enc.png_ 直接是加密产物（不要再对已加密文件 encrypt，会二次加密）
     fs.writeFileSync(enc, makeEncryptedPng())
-    let r = await run(['decrypt', '-k', KEY, '-o', dec, enc])
+    let r = await run(['decrypt', '-k', KEY, '-o', dec, enc, '--json'])
     assert.equal(r.code, 0)
+    const decJson = JSON.parse(r.out)
+    assert.equal(decJson.ok, true)
+    assert.equal(path.resolve(decJson.output), path.resolve(dec))
     const decBuf = fs.readFileSync(dec)
     for (let i = 0; i < PNG_HEADER_BYTES.length; i++) assert.equal(decBuf[i], PNG_HEADER_BYTES[i])
-    // 再加密回去
-    r = await run(['encrypt', '-k', KEY, '-o', path.join(TMP, 'enc2.png_'), dec])
+    // 再加密回去（默认 mv 输出 .rpgmvp；--format mz 输出 .png_）
+    r = await run(['encrypt', '-k', KEY, dec])
     assert.equal(r.code, 0)
-    const back = new Decrypter(KEY).decrypt(fs.readFileSync(path.join(TMP, 'enc2.png_')))
+    const defaultMvOut = path.join(TMP, 'nested', 'dec.rpgmvp')
+    assert.equal(fs.existsSync(defaultMvOut), true)
+    r = await run(['encrypt', '-k', KEY, '--format', 'mz', dec])
+    assert.equal(r.code, 0)
+    const defaultMzOut = path.join(TMP, 'nested', 'dec.png_')
+    assert.equal(fs.existsSync(defaultMzOut), true)
+    const back = new Decrypter(KEY).decrypt(fs.readFileSync(defaultMzOut))
     assert.equal(back[0], 0x89)
   })
 
@@ -162,6 +171,56 @@ async function main() {
     const r = await run(['decode-dir', empty])
     assert.equal(r.code, 1)
     assert.match(r.err, /No encryption key|密钥/) // 默认 en 或 --lang 中文
+  })
+
+  console.log('验证 export-project:')
+  await ok('export-project 非游戏目录报错退出码 1', async () => {
+    const notGame = path.join(TMP, 'not-a-game')
+    fs.mkdirSync(notGame, { recursive: true })
+    const r = await run(['export-project', notGame, '--json'])
+    assert.equal(r.code, 1)
+    const j = JSON.parse(r.out)
+    assert.equal(j.ok, false)
+  })
+  await ok('export-project --dry-run 只探测不写盘', async () => {
+    const outProj = path.join(TMP, 'dry-proj')
+    const r = await run(['export-project', '--dry-run', '--json', '-o', outProj, GAME])
+    assert.equal(r.code, 0)
+    const j = JSON.parse(r.out)
+    assert.equal(j.dryRun, true)
+    assert.equal(j.encrypted, 1)
+    assert.equal(fs.existsSync(outProj), false)
+  })
+  await ok('export-project 默认输出 <dir>_project 并还原可编辑工程', async () => {
+    const mvGame = path.join(TMP, 'MyMVGame')
+    fs.mkdirSync(path.join(mvGame, 'www', 'data'), { recursive: true })
+    fs.mkdirSync(path.join(mvGame, 'www', 'js'), { recursive: true })
+    fs.mkdirSync(path.join(mvGame, 'www', 'img'), { recursive: true })
+    fs.writeFileSync(
+      path.join(mvGame, 'www', 'data', 'System.json'),
+      JSON.stringify({ encryptionKey: KEY, hasEncryptedImages: true, hasEncryptedAudio: true }),
+      'utf-8'
+    )
+    fs.writeFileSync(path.join(mvGame, 'www', 'js', 'rpg_core.js'), 'Utils.RPGMAKER_VERSION = "1.6.2";')
+    fs.writeFileSync(path.join(mvGame, 'www', 'img', 'hero.rpgmvp'), makeEncryptedPng())
+
+    const r = await run(['export-project', '--json', mvGame])
+    assert.equal(r.code, 0)
+    const j = JSON.parse(r.out)
+    assert.equal(j.ok, true)
+    assert.equal(j.engine, 'mv')
+    assert.equal(j.projectFile, 'Game.rpgproject')
+    assert.equal(j.systemPatched, true)
+    assert.equal(j.decrypted, 1)
+    assert.equal(j.magicFail, 0)
+    const expectedOut = path.join(TMP, 'MyMVGame_project')
+    assert.equal(path.resolve(j.output), path.resolve(expectedOut))
+    assert.equal(fs.readFileSync(path.join(expectedOut, 'Game.rpgproject'), 'utf-8'), 'RPGMV 1.6.2')
+    assert.equal(fs.readFileSync(path.join(expectedOut, 'img', 'hero.png'))[0], 0x89)
+    assert.equal(fs.existsSync(path.join(expectedOut, 'img', 'hero.rpgmvp')), false)
+    const patchedSys = JSON.parse(fs.readFileSync(path.join(expectedOut, 'data', 'System.json'), 'utf-8'))
+    assert.equal(patchedSys.hasEncryptedImages, false)
+    assert.equal(patchedSys.hasEncryptedAudio, false)
   })
 
   console.log(`\n结果: ${passed} 通过, ${failed} 失败`)

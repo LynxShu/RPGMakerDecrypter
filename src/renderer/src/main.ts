@@ -31,6 +31,12 @@ const state = {
   scanning: false,
   processing: false,
   exporting: false,
+  /** 最近一次扫描是否已完成（且未取消） */
+  scanned: false,
+  /** 最近一次解密到缓存是否已完成（且未取消） */
+  processed: false,
+  /** 扫描探测到的 MV/MZ 引擎类型；非完整游戏目录则为 null */
+  projectEngine: null as 'mv' | 'mz' | null,
   /** 最近一次导出的路径（文件目录或 ZIP 文件），用于「打开输出目录」 */
   exportPath: '',
   /** exportPath 是否为 ZIP 文件（否则为目录） */
@@ -409,10 +415,35 @@ function updateDecryptFab(): void {
   })
 }
 
+/** 统一更新导出按钮状态（导出文件 / 导出工程 / 导出 ZIP） */
+function updateExportButtons(): void {
+  const busy = state.scanning || state.processing || state.exporting
+  const hasCache = state.processed && state.files.length > 0
+  ;($('#exportBtn') as HTMLButtonElement).disabled = busy || !hasCache
+  ;($('#exportZipBtn') as HTMLButtonElement).disabled = busy || !hasCache
+
+  const projBtn = $('#exportProjectBtn') as HTMLButtonElement
+  // 导出工程：需探测到完整 MV/MZ 目录；若有加密文件需先解密完成，未加密游戏扫完即可直接导出
+  const canExportProject =
+    !busy &&
+    state.scanned &&
+    state.projectEngine !== null &&
+    (state.files.length === 0 || state.processed)
+  projBtn.disabled = !canExportProject
+  if (state.scanned && state.projectEngine === null) {
+    void dsh.t('crypto.exportProjectNeedGame').then((tip) => {
+      if (state.scanned && state.projectEngine === null) projBtn.setAttribute('data-tip', tip)
+    })
+  } else {
+    projBtn.removeAttribute('data-tip')
+  }
+}
+
 function setScanningUI(on: boolean): void {
   state.scanning = on
   ;($('#openBtn') as HTMLButtonElement).disabled = on
   ;($('#keyInput') as HTMLInputElement).disabled = on
+  updateExportButtons()
   updateDecryptFab()
 }
 
@@ -427,13 +458,13 @@ function setProcessUI(on: boolean): void {
   state.processing = on
   ;($('#openBtn') as HTMLButtonElement).disabled = on
   ;($('#keyInput') as HTMLInputElement).disabled = on
+  updateExportButtons()
   updateDecryptFab()
 }
 
 function setExportingUI(on: boolean): void {
   state.exporting = on
-  ;($('#exportBtn') as HTMLButtonElement).disabled = on
-  ;($('#exportZipBtn') as HTMLButtonElement).disabled = on
+  updateExportButtons()
   updateDecryptFab()
 }
 
@@ -464,10 +495,11 @@ async function startDecrypt(dir: string): Promise<void> {
   state.dir = dir
   state.key = ''
   state.files = []
+  state.scanned = false
+  state.processed = false
+  state.projectEngine = null
   void renderFileList()
   ;($('#keyInput') as HTMLInputElement).value = ''
-  ;($('#exportBtn') as HTMLButtonElement).disabled = true
-  ;($('#exportZipBtn') as HTMLButtonElement).disabled = true
   state.exportPath = ''
   state.exportIsFile = false
   ;($('#openOutBtn') as HTMLButtonElement).disabled = true
@@ -488,20 +520,25 @@ async function startDecrypt(dir: string): Promise<void> {
   })
   offScanDone = dsh.onScanDone(async (p) => {
     if (p.jobId !== state.scanJobId) return
-    setScanningUI(false)
     state.key = p.key ?? ''
     ;($('#keyInput') as HTMLInputElement).value = state.key
     if (p.canceled) {
+      state.scanned = false
+      state.projectEngine = null
+      setScanningUI(false)
       setScanStatus(await dsh.t('task.cancelled'))
       await setKeyState(null, '')
     } else {
+      state.scanned = true
+      state.projectEngine = p.project?.engine ?? null
+      setScanningUI(false)
       await setScanStatusFromFound(p.found)
       renderStats()
       if (p.keyOk === true) await setKeyState(true, 'crypto.keyOk')
       else if (p.keyOk === false) await setKeyState(false, 'crypto.keyBad')
       else await setKeyState(p.key ? true : null, p.key ? 'crypto.keyOk' : 'error.noKey')
       // 扫完自动开跑解密（把结果落到缓存），跑完再决定导出
-      if (p.keyOk !== false && state.key) void runProcess()
+      if (p.keyOk !== false && state.key && state.files.length > 0) void runProcess()
     }
   })
 
@@ -517,6 +554,7 @@ async function setScanStatusFromFound(found: number): Promise<void> {
 async function runProcess(key: string = state.key): Promise<void> {
   if (state.files.length === 0 || !key) return
   state.key = key
+  state.processed = false
   const box = $('#scanStatus') as HTMLElement
   setProcessUI(true)
   box.textContent = await dsh.t('task.working')
@@ -527,11 +565,10 @@ async function runProcess(key: string = state.key): Promise<void> {
     if (res.canceled) {
       box.textContent = await dsh.t('task.cancelled')
     } else {
+      state.processed = true
       let text = await dsh.t('task.completed', { count: res.ok })
       if (res.magicFail) text += '\n' + (await dsh.t('crypto.magicFail', { count: res.magicFail }))
       box.textContent = text
-      ;($('#exportBtn') as HTMLButtonElement).disabled = false
-      ;($('#exportZipBtn') as HTMLButtonElement).disabled = false
       // 手动修正密钥后重跑时，用结果反哺密钥校验状态
       if ((res.magicFail ?? 0) > 0) await setKeyState(false, 'crypto.keyBad')
       else if (res.ok > 0) await setKeyState(true, 'crypto.keyOk')
@@ -567,24 +604,39 @@ async function bindExportProgress(box: HTMLElement): Promise<() => void> {
       fail: p.fail
     })
     box.textContent = p.current ? `${base}\n${p.current}` : base
-    $('#statOk').textContent = String(p.ok)
-    $('#statFail').textContent = String(p.fail)
+    // 工程导出统计的是整个工程全部文件，不覆盖上方加密文件解密统计
+    if (p.phase !== 'project') {
+      $('#statOk').textContent = String(p.ok)
+      $('#statFail').textContent = String(p.fail)
+    }
   })
 }
 
-async function runExport(mode: 'files' | 'zip'): Promise<void> {
-  if (state.files.length === 0) return
+async function runExport(mode: 'files' | 'project' | 'zip'): Promise<void> {
+  if (mode === 'project') {
+    if (!state.dir || !state.projectEngine) return
+  } else if (state.files.length === 0) {
+    return
+  }
   const box = $('#scanStatus') as HTMLElement
   setExportingUI(true)
   box.textContent = await dsh.t('task.working')
   setProgress('exportProgress', 0, true)
   const unsubscribe = await bindExportProgress(box)
   try {
-    const res = mode === 'files' ? await dsh.exportFiles() : await dsh.exportZip()
+    const res =
+      mode === 'files'
+        ? await dsh.exportFiles()
+        : mode === 'project'
+          ? await dsh.exportProject(state.dir)
+          : await dsh.exportZip()
     if (res.canceled) {
       box.textContent = await dsh.t('task.cancelled')
+    } else if (res.error) {
+      box.textContent = res.error
     } else {
-      const doneKey = mode === 'files' ? 'task.exported' : 'task.packed'
+      const doneKey =
+        mode === 'files' ? 'task.exported' : mode === 'project' ? 'task.exportedProject' : 'task.packed'
       let text = await dsh.t(doneKey, { count: res.ok })
       if (res.outputDir) {
         state.exportPath = res.outputDir
@@ -595,7 +647,7 @@ async function runExport(mode: 'files' | 'zip'): Promise<void> {
         setButtonTooltip('#openOutBtn', res.outputDir)
       }
       box.textContent = text
-      $('#statOk').textContent = String(res.ok)
+      if (mode !== 'project') $('#statOk').textContent = String(res.ok)
     }
   } finally {
     unsubscribe()
@@ -617,13 +669,14 @@ async function resetDecrypt(): Promise<void> {
   state.scanning = false
   state.processing = false
   state.exporting = false
+  state.scanned = false
+  state.processed = false
+  state.projectEngine = null
   state.exportPath = ''
   state.exportIsFile = false
   ;($('#keyInput') as HTMLInputElement).value = ''
   ;($('#keyInput') as HTMLInputElement).disabled = false
   ;($('#openBtn') as HTMLButtonElement).disabled = false
-  ;($('#exportBtn') as HTMLButtonElement).disabled = true
-  ;($('#exportZipBtn') as HTMLButtonElement).disabled = true
   const openOut = $('#openOutBtn') as HTMLButtonElement
   openOut.disabled = true
   openOut.removeAttribute('data-tip')
@@ -635,6 +688,7 @@ async function resetDecrypt(): Promise<void> {
   setScanStatus('')
   setProgress('exportProgress', 0, false)
   await renderFileList()
+  updateExportButtons()
   updateDecryptFab()
 }
 
@@ -941,10 +995,14 @@ function bind(): void {
     const dir = await dsh.selectDir()
     if (!dir) return
     state.dir = dir // 修复：之前只显示路径，没写 state.dir，导致「开始解密」无效
-    // 换目录视为新会话：清掉手填/上次找到的密钥，避免误用旧 key 处理旧文件清单
+    // 换目录视为新会话：清掉手填/上次找到的密钥和上次扫描态，避免误用旧数据
     state.key = ''
+    state.scanned = false
+    state.processed = false
+    state.projectEngine = null
     ;($('#keyInput') as HTMLInputElement).value = ''
     setButtonTooltip('#openBtn', dir)
+    updateExportButtons()
     updateDecryptFab()
     setScanStatus('')
   })
@@ -961,6 +1019,7 @@ function bind(): void {
   })
   $('#resetBtn').addEventListener('click', () => void resetDecrypt())
   $('#exportBtn').addEventListener('click', () => void runExport('files'))
+  $('#exportProjectBtn').addEventListener('click', () => void runExport('project'))
   $('#exportZipBtn').addEventListener('click', () => void runExport('zip'))
   // 手填密钥只影响「用当前密钥解密」的按钮文案，不直接改 state.key（state.key 是最近一次扫描/解密用的 key）
   ;($('#keyInput') as HTMLInputElement).addEventListener('input', () => updateDecryptFab())

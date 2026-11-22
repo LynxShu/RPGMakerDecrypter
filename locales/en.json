@@ -20,6 +20,8 @@
     "reset": "Reset",
     "preview": "Preview",
     "export": "Export files",
+    "exportProject": "Export project",
+    "exportProjectNeedGame": "Requires a complete game folder containing data/System.json",
     "exportZip": "Export ZIP",
     "fileList": "File list",
     "statEncrypted": "Encrypted files",
@@ -63,7 +65,8 @@
     "noKey": "No encryption key provided.",
     "noKeyInDir": "No encryption key found — specify one with --key.",
     "noEncryptedFiles": "No encrypted files found.",
-    "folderNotFound": "Folder not found."
+    "folderNotFound": "Folder not found.",
+    "notRpgProject": "Not a valid RPG Maker MV/MZ game folder (missing data/System.json)."
   },
   "theme": {
     "label": "Theme",
@@ -95,6 +98,7 @@
     "progressSkip": "{pct}% ({done}/{total}) · OK {ok} · Failed {fail} · Skipped {skip}",
     "packingZip": "Packing ZIP… {pct}%",
     "exported": "Exported {count} files",
+    "exportedProject": "Exported project ({count} files)",
     "packed": "Packed {count} files into ZIP",
     "savedTo": "Saved to {path}"
   },

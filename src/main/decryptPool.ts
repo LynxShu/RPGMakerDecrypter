@@ -161,6 +161,15 @@ function createSlots(count: number, workerPath: string): { slots: Slot[]; dispos
   return { slots, dispose: () => { for (const d of disposers) d() } }
 }
 
+function resolveDefaultWorkerPath(): string {
+  const sameDir = join(__dirname, 'worker.js')
+  if (existsSync(sameDir)) return sameDir
+  // electron-vite 将共享 chunk 拆到 out/main/chunks/ 时，worker.js 位于上一级 out/main/
+  const parentDir = join(__dirname, '..', 'worker.js')
+  if (existsSync(parentDir)) return parentDir
+  return sameDir
+}
+
 /**
  * 并行跑一批加解密任务。
  *
@@ -178,7 +187,7 @@ export async function runDecryptJobs(
   if (total === 0) return { ok: 0, fail: 0, canceled: false, results: [] }
 
   const signal = opts.signal
-  const workerPath = opts.workerPath ?? join(__dirname, 'worker.js')
+  const workerPath = opts.workerPath ?? resolveDefaultWorkerPath()
   const timeoutMs = opts.jobTimeoutMs ?? DEFAULT_JOB_TIMEOUT_MS
   const maxWorkers = Math.max(1, Math.min(opts.maxWorkers ?? 8, defaultWorkerCount()))
   const { slots, dispose } = createSlots(Math.min(maxWorkers, total), workerPath)

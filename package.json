@@ -1,12 +1,12 @@
 {
   "name": "rpgmaker-decrypter",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "RPG Maker Decrypter",
   "author": "LynxShu",
   "license": "MIT",
   "main": "out/main/index.js",
   "bin": {
-    "rpgmaker-decrypter": "out/cli/index.js"
+    "rpgmaker-decrypter": "out/main/cli.js"
   },
   "scripts": {
     "dev": "electron-vite dev",
@@ -17,7 +17,7 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "cli": "tsx src/cli/index.ts",
-    "cli:test": "node scripts/prepare-cli-test.cjs && node scripts/verify-cli.cjs",
+    "cli:test": "node node_modules/typescript/bin/tsc -p tsconfig.build-lib.json && node scripts/prepare-cli-test.cjs && node scripts/verify-cli.cjs",
     "watch:test": "node node_modules/typescript/bin/tsc -p tsconfig.buildmain.json && node scripts/verify-watch.cjs && node scripts/verify-pool.cjs",
     "package": "npm run build && node scripts/electron-builder.cjs",
     "package:dir": "npm run build && node scripts/electron-builder.cjs --dir",
