@@ -7,6 +7,7 @@
 <a href="https://github.com/LynxShu/RPGMakerDecrypter/releases"><img src="https://img.shields.io/github/v/release/LynxShu/RPGMakerDecrypter?style=flat&label=Release&color=2EA44F" alt="Release"></a>&nbsp;
 <a href="https://github.com/LynxShu/RPGMakerDecrypter/releases"><img src="https://img.shields.io/badge/Windows-10%2F11-4493F8?style=flat" alt="Windows"></a>&nbsp;
 <a href="./skills/rpgmaker-decrypter/SKILL.md"><img src="https://img.shields.io/badge/AI%20Skill-SKILL.md-F97316?style=flat" alt="AI Skill"></a>&nbsp;
+<a href="https://space.bilibili.com/582462"><img src="https://img.shields.io/badge/Bilibili-LynxShu-00A1D6?style=flat&logo=bilibili&logoColor=white" alt="Bilibili"></a>&nbsp;
 <a href="https://github.com/LynxShu/RPGMakerDecrypter/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-57606a?style=flat" alt="MIT License"></a>
 </p>
 
